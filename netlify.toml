@@ -12,6 +12,7 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["prisma/**/*"]
   
 [build.processing.css]
   bundle = true
