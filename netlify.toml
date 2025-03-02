@@ -6,7 +6,6 @@
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
-  RUBY_VERSION = "2.7.2"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
