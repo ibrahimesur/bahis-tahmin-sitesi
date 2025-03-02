@@ -34,11 +34,7 @@ export default async function handler(
             likes: true
           }
         },
-        _count: {
-          select: {
-            followers: true
-          }
-        }
+        _count: true
       }
     });
 
@@ -68,7 +64,7 @@ export default async function handler(
 
     res.status(200).json({
       ...editor,
-      followers: editor._count?.followers || 0,
+      followers: editor._count?.articles || 0,
       isFollowing: !!isFollowing
     });
   } catch (error) {
