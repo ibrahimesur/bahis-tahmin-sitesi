@@ -148,7 +148,7 @@ export default async function handler(
       };
     });
 
-    const sortedMatches = matches.sort((a, b) => {
+    const sortedMatches = matches.sort((a: LiveScore, b: LiveScore) => {
       // Önce canlı maçları göster
       if (a.status === 'live' && b.status !== 'live') return -1;
       if (a.status !== 'live' && b.status === 'live') return 1;
@@ -170,7 +170,7 @@ export default async function handler(
       return 0;
     });
 
-    console.log('İşlenmiş maçlar:', sortedMatches.map(m => ({
+    console.log('İşlenmiş maçlar:', sortedMatches.map((m: LiveScore) => ({
       id: m.id,
       teams: `${m.homeTeam.name} vs ${m.awayTeam.name}`,
       status: m.status,
