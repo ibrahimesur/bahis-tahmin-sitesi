@@ -129,7 +129,7 @@ export default async function handler(
         coach: {
           id: 1,
           name: homeSquad.players.coach,
-          photo: null,
+          photo: undefined,
           nationality: 'TR'
         }
       },
@@ -145,7 +145,7 @@ export default async function handler(
         coach: {
           id: 2,
           name: awaySquad.players.coach,
-          photo: null,
+          photo: undefined,
           nationality: 'TR'
         }
       }
