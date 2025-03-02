@@ -1,23 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
-import { Prisma } from '@prisma/client';
 
-// Prisma'nın döndürdüğü tip için bir tip tanımı
-type EditorResult = Prisma.UserGetPayload<{
-  select: {
-    id: true;
-    username: true;
-    avatar: true;
-    bio: true;
-    successRate: true;
-    _count: {
-      select: {
-        predictions: true;
-        followers: true;
-      }
-    }
-  }
-}>;
+// Basit bir editor tipi tanımlıyorum
+interface Editor {
+  id: string;
+  username: string;
+  avatar: string | null;
+  bio: string | null;
+  successRate: number | null;
+  _count: {
+    predictions: number;
+    followers: number;
+  };
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,6 +23,7 @@ export default async function handler(
   }
 
   try {
+    // Tip ataması olmadan sorguyu çalıştırıyoruz
     const editors = await prisma.user.findMany({
       where: {
         role: 'editor'
