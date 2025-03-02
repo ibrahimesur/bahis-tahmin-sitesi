@@ -27,6 +27,7 @@ export default async function handler(
 
   try {
     console.log('Gelen istek gövdesi:', req.body);
+    console.log('İstek başlıkları:', req.headers);
     
     // İstek gövdesi boş ise
     if (!req.body || Object.keys(req.body).length === 0) {
@@ -65,29 +66,36 @@ export default async function handler(
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Kullanıcıyı oluştur
-    const user = await prisma.user.create({
-      data: {
-        email,
-        username,
-        password: hashedPassword,
-        membershipType: 'free'
-      }
-    });
-
-    // Hassas bilgileri çıkar
-    const { password: _, ...userWithoutPassword } = user;
-
-    console.log('Kullanıcı başarıyla oluşturuldu:', userWithoutPassword.id);
-
-    // Yanıt gönder
-    const response = {
-      message: 'Kayıt başarılı',
-      user: userWithoutPassword
-    };
+    console.log('Kullanıcı oluşturuluyor...');
     
-    console.log('Gönderilen yanıt:', response);
-    return res.status(201).json(response);
+    try {
+      // Kullanıcıyı oluştur
+      const user = await prisma.user.create({
+        data: {
+          email,
+          username,
+          password: hashedPassword,
+          membershipType: 'free'
+        }
+      });
+
+      // Hassas bilgileri çıkar
+      const { password: _, ...userWithoutPassword } = user;
+
+      console.log('Kullanıcı başarıyla oluşturuldu:', userWithoutPassword.id);
+
+      // Yanıt gönder
+      const response = {
+        message: 'Kayıt başarılı',
+        user: userWithoutPassword
+      };
+      
+      console.log('Gönderilen yanıt:', response);
+      return res.status(201).json(response);
+    } catch (prismaError) {
+      console.error('Prisma hatası:', prismaError);
+      return res.status(500).json({ error: 'Veritabanı hatası: ' + (prismaError instanceof Error ? prismaError.message : 'Bilinmeyen hata') });
+    }
   } catch (error) {
     console.error('Kayıt hatası:', error);
     return res.status(500).json({ error: 'Sunucu hatası: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata') });
