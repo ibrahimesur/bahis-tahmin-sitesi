@@ -9,16 +9,25 @@ export default async function handler(
   const session = await getSession({ req });
   const { id } = req.query;
 
-  if (!session?.user?.id) {
+  if (!session?.user?.email) {
     return res.status(401).json({ error: 'Oturum açmanız gerekiyor' });
   }
 
   try {
+    // Kullanıcı bilgilerini e-posta adresine göre al
+    const currentUser = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
     if (req.method === 'POST') {
       // Takip et
       await prisma.follows.create({
         data: {
-          followerId: session.user.id,
+          followerId: currentUser.id,
           followingId: id as string
         }
       });
@@ -28,7 +37,7 @@ export default async function handler(
       await prisma.follows.delete({
         where: {
           followerId_followingId: {
-            followerId: session.user.id,
+            followerId: currentUser.id,
             followingId: id as string
           }
         }
