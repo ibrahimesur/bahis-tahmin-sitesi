@@ -7,14 +7,28 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // CORS başlıklarını ekle
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  // OPTIONS isteği için hemen yanıt ver
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    console.log('Gelen istek gövdesi:', req.body);
+    
     const { username, email, password }: RegisterFormData = req.body;
 
     if (!username || !email || !password) {
+      console.log('Eksik alanlar:', { username: !!username, email: !!email, password: !!password });
       return res.status(400).json({
         error: 'Kullanıcı adı, email ve şifre gereklidir'
       });
@@ -33,6 +47,7 @@ export default async function handler(
     });
 
     if (existingUser) {
+      console.log('Kullanıcı zaten var:', existingUser.email);
       return res.status(400).json({
         error: 'Bu e-posta veya kullanıcı adı zaten kullanılıyor'
       });
@@ -56,12 +71,16 @@ export default async function handler(
 
     console.log('Kullanıcı başarıyla oluşturuldu:', userWithoutPassword.id);
 
-    res.status(201).json({
+    // Yanıt gönder
+    const response = {
       message: 'Kayıt başarılı',
       user: userWithoutPassword
-    });
+    };
+    
+    console.log('Gönderilen yanıt:', response);
+    return res.status(201).json(response);
   } catch (error) {
     console.error('Kayıt hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata') });
+    return res.status(500).json({ error: 'Sunucu hatası: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata') });
   }
 } 

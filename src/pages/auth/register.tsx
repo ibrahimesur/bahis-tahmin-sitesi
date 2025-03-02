@@ -27,6 +27,8 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      console.log('Kayıt isteği gönderiliyor:', { ...formData, password: '***' });
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -35,14 +37,27 @@ export default function RegisterPage() {
         body: JSON.stringify(formData),
       });
 
+      console.log('Sunucu yanıtı:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       let data;
       const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        console.error("Sunucudan JSON olmayan yanıt:", text);
-        throw new Error("Sunucudan geçersiz yanıt alındı");
+      
+      try {
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          data = await response.json();
+          console.log('Alınan JSON veri:', data);
+        } else {
+          const text = await response.text();
+          console.error("Sunucudan JSON olmayan yanıt:", text);
+          throw new Error("Sunucudan geçersiz yanıt alındı");
+        }
+      } catch (jsonError) {
+        console.error("JSON ayrıştırma hatası:", jsonError);
+        throw new Error("Sunucu yanıtı işlenirken hata oluştu");
       }
 
       if (!response.ok) {
@@ -50,7 +65,7 @@ export default function RegisterPage() {
       }
 
       // Başarılı kayıt sonrası giriş sayfasına yönlendir
-      router.push('/auth/login');
+      router.push('/auth/login?registered=true');
     } catch (err) {
       console.error("Kayıt hatası:", err);
       setError(err instanceof Error ? err.message : 'Bir hata oluştu');
