@@ -11,4 +11,18 @@
   package = "@netlify/plugin-nextjs"
 
 [functions]
-  node_bundler = "esbuild" 
+  node_bundler = "esbuild"
+  
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false 
