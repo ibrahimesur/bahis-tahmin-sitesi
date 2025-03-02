@@ -14,6 +14,14 @@ export default async function handler(
   try {
     const { username, email, password }: RegisterFormData = req.body;
 
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        error: 'Kullanıcı adı, email ve şifre gereklidir'
+      });
+    }
+
+    console.log('Kayıt isteği alındı:', { username, email });
+
     // E-posta ve kullanıcı adı kontrolü
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -46,12 +54,14 @@ export default async function handler(
     // Hassas bilgileri çıkar
     const { password: _, ...userWithoutPassword } = user;
 
+    console.log('Kullanıcı başarıyla oluşturuldu:', userWithoutPassword.id);
+
     res.status(201).json({
       message: 'Kayıt başarılı',
       user: userWithoutPassword
     });
   } catch (error) {
     console.error('Kayıt hatası:', error);
-    res.status(500).json({ error: 'Sunucu hatası' });
+    res.status(500).json({ error: 'Sunucu hatası: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata') });
   }
 } 

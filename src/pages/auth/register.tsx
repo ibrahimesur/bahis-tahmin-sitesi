@@ -35,7 +35,15 @@ export default function RegisterPage() {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error("Sunucudan JSON olmayan yanıt:", text);
+        throw new Error("Sunucudan geçersiz yanıt alındı");
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Kayıt başarısız');
@@ -44,6 +52,7 @@ export default function RegisterPage() {
       // Başarılı kayıt sonrası giriş sayfasına yönlendir
       router.push('/auth/login');
     } catch (err) {
+      console.error("Kayıt hatası:", err);
       setError(err instanceof Error ? err.message : 'Bir hata oluştu');
     } finally {
       setIsLoading(false);
