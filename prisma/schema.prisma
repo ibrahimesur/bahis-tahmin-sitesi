@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String    @unique
+  password        String
+  role            String    @default("user") // user, editor, admin
+  membershipType  String    @default("free") // free, premium, vip
+  membershipExpiry DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  avatar          String?
+  bio            String?
+  successRate    Float?    @default(0)
+  predictions    Prediction[]
+  comments       Comment[]
+  articles       Article[]
+  followers      Follows[] @relation("Following")
+  following      Follows[] @relation("Follower")
+}
+
+model Prediction {
+  id          String    @id @default(cuid())
+  title       String
+  content     String
+  match       Match     @relation(fields: [matchId], references: [id])
+  matchId     String
+  prediction  String
+  odds        Float
+  status      String    @default("pending") // pending, won, lost
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  comments    Comment[]
+}
+
+model Match {
+  id          String    @id @default(cuid())
+  homeTeam    String
+  awayTeam    String
+  league      String
+  date        DateTime
+  predictions Prediction[]
+  result      Result?
+}
+
+model Result {
+  id          String    @id @default(cuid())
+  match       Match     @relation(fields: [matchId], references: [id])
+  matchId     String    @unique
+  homeScore   Int
+  awayScore   Int
+  status      String    // finished, cancelled, postponed
+}
+
+model Article {
+  id          String    @id @default(cuid())
+  title       String
+  content     String    @db.Text
+  image       String?
+  author      User      @relation(fields: [authorId], references: [id])
+  authorId    String
+  category    String    // analysis, column, news
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  likes       Int       @default(0)
+  comments    Comment[]
+}
+
+model Follows {
+  follower    User     @relation("Follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User     @relation("Following", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  content     String
+  article     Article  @relation(fields: [articleId], references: [id])
+  articleId   String
+  author      User     @relation(fields: [authorId], references: [id])
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+} 
