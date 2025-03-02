@@ -47,18 +47,28 @@ export default async function handler(
     }
 
     // Kullanıcının editörü takip edip etmediğini kontrol et
-    const isFollowing = session?.user?.id ? await prisma.follows.findUnique({
-      where: {
-        followerId_followingId: {
-          followerId: session.user.id,
-          followingId: id as string
-        }
+    let isFollowing = null;
+    
+    if (session?.user?.email) {
+      const currentUser = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      });
+      
+      if (currentUser) {
+        isFollowing = await prisma.follows.findUnique({
+          where: {
+            followerId_followingId: {
+              followerId: currentUser.id,
+              followingId: id as string
+            }
+          }
+        });
       }
-    }) : null;
+    }
 
     res.status(200).json({
       ...editor,
-      followers: editor._count.followers,
+      followers: editor._count?.followers || 0,
       isFollowing: !!isFollowing
     });
   } catch (error) {
