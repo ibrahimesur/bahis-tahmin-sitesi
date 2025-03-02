@@ -65,7 +65,7 @@ model Result {
 model Article {
   id          String    @id @default(cuid())
   title       String
-  content     String    @db.Text
+  content     String
   image       String?
   author      User      @relation(fields: [authorId], references: [id])
   authorId    String
@@ -91,6 +91,8 @@ model Comment {
   content     String
   article     Article  @relation(fields: [articleId], references: [id])
   articleId   String
+  prediction  Prediction? @relation(fields: [predictionId], references: [id])
+  predictionId String?
   author      User     @relation(fields: [authorId], references: [id])
   authorId    String
   createdAt   DateTime @default(now())
