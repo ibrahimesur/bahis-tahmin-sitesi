@@ -15,6 +15,7 @@
     "autoprefixer": "^10.4.0",
     "bcryptjs": "^3.0.2",
     "next": "^14.1.0",
+    "next-auth": "^4.24.11",
     "postcss": "^8.4.0",
     "prisma": "^6.4.1",
     "react": "^18.2.0",
