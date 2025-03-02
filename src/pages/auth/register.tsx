@@ -43,20 +43,23 @@ export default function RegisterPage() {
         headers: Object.fromEntries(response.headers.entries())
       });
 
-      let data;
-      const contentType = response.headers.get("content-type");
+      // Önce yanıtı metin olarak al
+      const responseText = await response.text();
+      console.log('Ham yanıt:', responseText);
       
+      // HTML yanıtı kontrolü
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+        console.error('HTML yanıtı alındı, bu muhtemelen bir sunucu hatası veya yönlendirme sorunudur');
+        throw new Error('Sunucu beklenmeyen bir yanıt döndürdü. Lütfen daha sonra tekrar deneyin.');
+      }
+      
+      // Metin yanıtını JSON'a dönüştürmeyi dene
+      let data;
       try {
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          data = await response.json();
-          console.log('Alınan JSON veri:', data);
-        } else {
-          const text = await response.text();
-          console.error("Sunucudan JSON olmayan yanıt:", text);
-          throw new Error("Sunucudan geçersiz yanıt alındı");
-        }
+        data = responseText ? JSON.parse(responseText) : {};
+        console.log('Ayrıştırılan JSON veri:', data);
       } catch (jsonError) {
-        console.error("JSON ayrıştırma hatası:", jsonError);
+        console.error("JSON ayrıştırma hatası:", jsonError, "Ham yanıt:", responseText);
         throw new Error("Sunucu yanıtı işlenirken hata oluştu");
       }
 

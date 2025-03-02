@@ -12,6 +12,9 @@ export default async function handler(
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  
+  // Content-Type başlığını ayarla
+  res.setHeader('Content-Type', 'application/json');
 
   // OPTIONS isteği için hemen yanıt ver
   if (req.method === 'OPTIONS') {
@@ -24,6 +27,12 @@ export default async function handler(
 
   try {
     console.log('Gelen istek gövdesi:', req.body);
+    
+    // İstek gövdesi boş ise
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('İstek gövdesi boş veya geçersiz');
+      return res.status(400).json({ error: 'Geçersiz istek gövdesi' });
+    }
     
     const { username, email, password }: RegisterFormData = req.body;
 
