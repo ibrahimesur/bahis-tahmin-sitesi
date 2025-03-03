@@ -159,16 +159,37 @@ export default async function handler(
     let stats;
     if (statsResponse.ok) {
       const statsData = await statsResponse.json();
-      console.log('Ham istatistik verisi:', statsData);
+      console.log('Ham istatistik verisi:', JSON.stringify(statsData, null, 2));
+
+      // API yanıtını kontrol et
+      if (!statsData.statistics || !Array.isArray(statsData.statistics)) {
+        console.log('Geçersiz istatistik verisi formatı:', statsData);
+        throw new Error('Geçersiz istatistik verisi formatı');
+      }
 
       // İstatistikleri doğru şekilde çıkar
-      const homeStats = statsData.statistics?.find((stat: any) => stat.team.id === matchData.homeTeam.id)?.statistics || [];
-      const awayStats = statsData.statistics?.find((stat: any) => stat.team.id === matchData.awayTeam.id)?.statistics || [];
+      const homeStats = statsData.statistics.find((stat: any) => stat.team.id === matchData.homeTeam.id);
+      const awayStats = statsData.statistics.find((stat: any) => stat.team.id === matchData.awayTeam.id);
 
-      // Yardımcı fonksiyon - istatistik değerini bul
-      const findStatValue = (stats: any[], type: string) => {
-        const stat = stats.find((s: any) => s.type === type);
-        return stat ? parseInt(stat.value) || 0 : 0;
+      console.log('Ev sahibi istatistikleri:', homeStats);
+      console.log('Deplasman istatistikleri:', awayStats);
+
+      // Yardımcı fonksiyon - istatistik değerini bul ve temizle
+      const cleanStatValue = (value: string) => {
+        // Yüzde işaretini kaldır ve sayıya çevir
+        return parseInt(value.replace('%', '')) || 0;
+      };
+
+      const findStatValue = (stats: any, type: string) => {
+        if (!stats || !stats.statistics) return 0;
+        const stat = stats.statistics.find((s: any) => s.type === type);
+        if (!stat) return 0;
+        
+        // Yüzde içeren değerler için özel işlem
+        if (type === 'Ball Possession') {
+          return cleanStatValue(stat.value);
+        }
+        return parseInt(stat.value) || 0;
       };
 
       stats = {
@@ -201,7 +222,10 @@ export default async function handler(
           away: findStatValue(awayStats, 'Red Cards')
         }
       };
+
+      console.log('İşlenmiş istatistikler:', stats);
     } else {
+      console.log('İstatistik API yanıtı başarısız:', await statsResponse.text());
       // API'den veri alınamazsa varsayılan değerler
       stats = {
         shots: { home: 0, away: 0 },

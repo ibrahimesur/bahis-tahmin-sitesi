@@ -213,6 +213,16 @@ export default function MatchDetailPage() {
                   home={match.stats.fouls.home} 
                   away={match.stats.fouls.away} 
                 />
+                <StatBar 
+                  label="Sarı Kart" 
+                  home={match.stats.yellowCards.home} 
+                  away={match.stats.yellowCards.away} 
+                />
+                <StatBar 
+                  label="Kırmızı Kart" 
+                  home={match.stats.redCards.home} 
+                  away={match.stats.redCards.away} 
+                />
               </div>
             )}
 
