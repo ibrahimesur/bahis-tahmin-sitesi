@@ -161,38 +161,48 @@ export default async function handler(
       const statsData = await statsResponse.json();
       console.log('Ham istatistik verisi:', statsData);
 
+      // İstatistikleri doğru şekilde çıkar
+      const homeStats = statsData.statistics?.find((stat: any) => stat.team.id === matchData.homeTeam.id)?.statistics || [];
+      const awayStats = statsData.statistics?.find((stat: any) => stat.team.id === matchData.awayTeam.id)?.statistics || [];
+
+      // Yardımcı fonksiyon - istatistik değerini bul
+      const findStatValue = (stats: any[], type: string) => {
+        const stat = stats.find((s: any) => s.type === type);
+        return stat ? parseInt(stat.value) || 0 : 0;
+      };
+
       stats = {
         shots: {
-          home: statsData.homeTeam?.shots?.total || 0,
-          away: statsData.awayTeam?.shots?.total || 0
+          home: findStatValue(homeStats, 'Total Shots'),
+          away: findStatValue(awayStats, 'Total Shots')
         },
         shotsOnTarget: {
-          home: statsData.homeTeam?.shots?.onTarget || 0,
-          away: statsData.awayTeam?.shots?.onTarget || 0
+          home: findStatValue(homeStats, 'Shots on Goal'),
+          away: findStatValue(awayStats, 'Shots on Goal')
         },
         possession: {
-          home: statsData.homeTeam?.possession || 0,
-          away: statsData.awayTeam?.possession || 0
+          home: findStatValue(homeStats, 'Ball Possession'),
+          away: findStatValue(awayStats, 'Ball Possession')
         },
         corners: {
-          home: statsData.homeTeam?.corners || 0,
-          away: statsData.awayTeam?.corners || 0
+          home: findStatValue(homeStats, 'Corner Kicks'),
+          away: findStatValue(awayStats, 'Corner Kicks')
         },
         fouls: {
-          home: statsData.homeTeam?.fouls || 0,
-          away: statsData.awayTeam?.fouls || 0
+          home: findStatValue(homeStats, 'Fouls'),
+          away: findStatValue(awayStats, 'Fouls')
         },
         yellowCards: {
-          home: statsData.homeTeam?.cards?.yellow || 0,
-          away: statsData.awayTeam?.cards?.yellow || 0
+          home: findStatValue(homeStats, 'Yellow Cards'),
+          away: findStatValue(awayStats, 'Yellow Cards')
         },
         redCards: {
-          home: statsData.homeTeam?.cards?.red || 0,
-          away: statsData.awayTeam?.cards?.red || 0
+          home: findStatValue(homeStats, 'Red Cards'),
+          away: findStatValue(awayStats, 'Red Cards')
         }
       };
     } else {
-      // API'den veri alınamazsa gerçekçi varsayılan değerler
+      // API'den veri alınamazsa varsayılan değerler
       stats = {
         shots: { home: 0, away: 0 },
         shotsOnTarget: { home: 0, away: 0 },

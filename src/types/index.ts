@@ -50,6 +50,7 @@ export interface AuthUser {
   id: string;
   username: string;
   email: string;
+  role: 'user' | 'editor' | 'admin';
   membershipType: 'free' | 'premium' | 'vip';
   avatar?: string;
   bio?: string;

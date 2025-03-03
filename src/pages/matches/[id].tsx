@@ -55,6 +55,29 @@ export default function MatchDetailPage() {
     const homePercent = total > 0 ? (home / total) * 100 : 50;
     const awayPercent = total > 0 ? (away / total) * 100 : 50;
 
+    // Topla oynama için özel hesaplama
+    if (label === "Topla Oynama") {
+      return (
+        <div className="mb-4">
+          <div className="flex justify-between text-sm text-gray-600 mb-1">
+            <span>%{home}</span>
+            <span>{label}</span>
+            <span>%{away}</span>
+          </div>
+          <div className="flex h-2 bg-gray-200 rounded overflow-hidden">
+            <div
+              className="bg-blue-500"
+              style={{ width: `${home}%` }}
+            />
+            <div
+              className="bg-red-500"
+              style={{ width: `${away}%` }}
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="mb-4">
         <div className="flex justify-between text-sm text-gray-600 mb-1">
