@@ -10,8 +10,8 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <Head>
-        <title>Tahmin Merkezi</title>
-        <meta name="description" content="Profesyonel bahis tahminleri" />
+        <title>BankoLab</title>
+        <meta name="description" content="Profesyonel bahis tahminleri ve analizleri - BankoLab" />
       </Head>
       
       <Navbar />
