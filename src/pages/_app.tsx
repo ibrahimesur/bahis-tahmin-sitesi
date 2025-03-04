@@ -1,7 +1,6 @@
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { AuthProvider } from '../contexts/AuthContext';
 
@@ -14,12 +13,12 @@ function MyApp({ Component, pageProps }: AppProps) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <Navbar>
-        <main className="p-4">
+      <div className="flex flex-col min-h-screen">
+        <main className="flex-grow p-4">
           <Component {...pageProps} />
         </main>
         <Footer />
-      </Navbar>
+      </div>
     </AuthProvider>
   );
 }

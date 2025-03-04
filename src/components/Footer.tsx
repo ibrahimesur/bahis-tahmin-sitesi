@@ -3,11 +3,11 @@ import Link from 'next/link';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-gray-800 text-white py-8">
+    <footer className="bg-gray-800 text-white py-8 mt-auto">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">Bahis Tahmin Sitesi</h3>
+            <h3 className="text-xl font-bold mb-4">BankoLab</h3>
             <p className="text-gray-300">
               En güncel bahis tahminleri ve analizleri ile kazanmanıza yardımcı oluyoruz.
             </p>
@@ -26,8 +26,13 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/iletisim" className="text-gray-300 hover:text-white">
-                  İletişim
+                <Link href="/standings" className="text-gray-300 hover:text-white">
+                  Puan Durumu
+                </Link>
+              </li>
+              <li>
+                <Link href="/editors" className="text-gray-300 hover:text-white">
+                  Editörler
                 </Link>
               </li>
             </ul>
@@ -44,7 +49,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} Bahis Tahmin Sitesi. Tüm hakları saklıdır.</p>
+          <p>&copy; {new Date().getFullYear()} BankoLab. Tüm hakları saklıdır.</p>
         </div>
       </div>
     </footer>
