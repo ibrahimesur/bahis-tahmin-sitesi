@@ -7,7 +7,7 @@ import { fetchLiveMatches } from '../services/api';
 const LEAGUES = [
   { id: 'all', name: 'Tüm Ligler' },
   { id: 'Premier League', name: 'Premier League' },
-  { id: 'Primera Division', name: 'La Liga' },
+  { id: 'La Liga', name: 'La Liga' },
   { id: 'Bundesliga', name: 'Bundesliga' },
   { id: 'Serie A', name: 'Serie A' },
   { id: 'Ligue 1', name: 'Ligue 1' },
@@ -17,13 +17,42 @@ const LEAGUES = [
   { id: 'Eredivisie', name: 'Eredivisie' }
 ];
 
+// Tarih formatlama fonksiyonu
+const formatMatchDate = (dateString?: string) => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  // Bugün, yarın veya dün ise özel metin göster
+  if (date.toDateString() === today.toDateString()) {
+    return `Bugün ${date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+  } else if (date.toDateString() === tomorrow.toDateString()) {
+    return `Yarın ${date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return `Dün ${date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  
+  // Diğer günler için tarih ve saat göster
+  return date.toLocaleDateString('tr-TR', { 
+    day: 'numeric', 
+    month: 'long', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+};
+
 export default function MatchesPage() {
   const [activeTab, setActiveTab] = useState<'live' | 'upcoming' | 'finished'>('live');
   const [selectedLeague, setSelectedLeague] = useState<string>('all');
   const [matches, setMatches] = useState<LiveScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   useEffect(() => {
     const loadMatches = async () => {
       try {
@@ -40,20 +69,54 @@ export default function MatchesPage() {
     };
 
     loadMatches();
-    const interval = setInterval(loadMatches, 60000); // Her dakika güncelle
+    const interval = setInterval(loadMatches, 60000); // Her dakika güncelle   
 
     return () => clearInterval(interval);
   }, []);
 
   // Liglere göre filtrele
-  const filteredMatches = matches.filter(match => 
+  const filteredMatches = matches.filter(match =>
     selectedLeague === 'all' || match.league === selectedLeague
   );
 
   // Duruma göre filtrele
-  const liveMatches = filteredMatches.filter(match => match.status === 'live');
+  const liveMatches = filteredMatches.filter(match => match.status === 'live'); 
   const upcomingMatches = filteredMatches.filter(match => match.status === 'not_started');
   const completedMatches = filteredMatches.filter(match => match.status === 'finished');
+
+  // Maçları tarihe göre grupla
+  const groupMatchesByDate = (matches: LiveScore[]) => {
+    const groups: { [key: string]: LiveScore[] } = {};
+    
+    matches.forEach(match => {
+      if (!match.date) return;
+      
+      const date = new Date(match.date);
+      const dateKey = date.toISOString().split('T')[0];
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      
+      groups[dateKey].push(match);
+    });
+    
+    // Tarihleri sırala (yaklaşan maçlar için artan, tamamlanan maçlar için azalan)
+    const sortedKeys = Object.keys(groups).sort((a, b) => {
+      if (activeTab === 'finished') {
+        return new Date(b).getTime() - new Date(a).getTime(); // Tamamlanan maçlar için en son oynananlar önce
+      }
+      return new Date(a).getTime() - new Date(b).getTime(); // Yaklaşan maçlar için en yakın tarih önce
+    });
+    
+    return sortedKeys.map(key => ({
+      date: key,
+      matches: groups[key]
+    }));
+  };
+  
+  const groupedUpcomingMatches = groupMatchesByDate(upcomingMatches);
+  const groupedCompletedMatches = groupMatchesByDate(completedMatches);
 
   if (isLoading) {
     return (
@@ -63,7 +126,7 @@ export default function MatchesPage() {
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>        
               ))}
             </div>
           </div>
@@ -77,11 +140,11 @@ export default function MatchesPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-6">Maçlar</h1>
-          
+
           <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
             <button
               onClick={() => setActiveTab('live')}
-              className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${
+              className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${ 
                 activeTab === 'live'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -91,7 +154,7 @@ export default function MatchesPage() {
             </button>
             <button
               onClick={() => setActiveTab('upcoming')}
-              className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${
+              className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${ 
                 activeTab === 'upcoming'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -101,7 +164,7 @@ export default function MatchesPage() {
             </button>
             <button
               onClick={() => setActiveTab('finished')}
-              className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${
+              className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap ${ 
                 activeTab === 'finished'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -115,7 +178,7 @@ export default function MatchesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sol Sidebar - Ligler */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-4 sticky top-4">
+            <div className="bg-white rounded-lg shadow p-4 sticky top-4">       
               <h2 className="text-lg font-semibold mb-4">Ligler</h2>
               <div className="space-y-2">
                 {LEAGUES.map(league => (
@@ -138,44 +201,74 @@ export default function MatchesPage() {
             {error ? (
               <div className="bg-red-50 text-red-600 p-4 rounded-lg">
                 {error}
-                <button 
-                  onClick={() => window.location.reload()} 
+                <button
+                  onClick={() => window.location.reload()}
                   className="ml-2 underline"
                 >
                   Yeniden dene
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {activeTab === 'live' && (
                   liveMatches.length > 0 ? (
-                    liveMatches.map(match => (
-                      <MatchCard key={match.id} match={match} />
-                    ))
+                    <div>
+                      <h2 className="text-xl font-semibold mb-4 text-red-600 flex items-center">
+                        <span className="inline-block w-3 h-3 bg-red-600 rounded-full mr-2 animate-pulse"></span>
+                        Canlı Maçlar
+                      </h2>
+                      <div className="space-y-4">
+                        {liveMatches.map(match => (
+                          <MatchCard key={match.id} match={match} />
+                        ))}
+                      </div>
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       Şu anda canlı maç bulunmuyor
                     </div>
                   )
                 )}
-                
+
                 {activeTab === 'upcoming' && (
                   upcomingMatches.length > 0 ? (
-                    upcomingMatches.map(match => (
-                      <MatchCard key={match.id} match={match} />
-                    ))
+                    <div className="space-y-8">
+                      {groupedUpcomingMatches.map(group => (
+                        <div key={group.date}>
+                          <h2 className="text-xl font-semibold mb-4 text-blue-600">
+                            {formatMatchDate(new Date(group.date).toISOString())}
+                          </h2>
+                          <div className="space-y-4">
+                            {group.matches.map(match => (
+                              <MatchCard key={match.id} match={match} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      Bugün oynanacak maç bulunmuyor
+                      Yaklaşan maç bulunmuyor
                     </div>
                   )
                 )}
-                
+
                 {activeTab === 'finished' && (
                   completedMatches.length > 0 ? (
-                    completedMatches.map(match => (
-                      <MatchCard key={match.id} match={match} />
-                    ))
+                    <div className="space-y-8">
+                      {groupedCompletedMatches.map(group => (
+                        <div key={group.date}>
+                          <h2 className="text-xl font-semibold mb-4 text-gray-600">
+                            {formatMatchDate(new Date(group.date).toISOString())}
+                          </h2>
+                          <div className="space-y-4">
+                            {group.matches.map(match => (
+                              <MatchCard key={match.id} match={match} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       Tamamlanan maç bulunmuyor

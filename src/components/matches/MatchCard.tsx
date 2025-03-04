@@ -35,6 +35,13 @@ export default function MatchCard({ match }: MatchCardProps) {
     }
   };
 
+  // Maç saatini formatla
+  const formatMatchTime = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div 
       className="bg-white rounded-lg shadow p-4 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -44,6 +51,9 @@ export default function MatchCard({ match }: MatchCardProps) {
         <span className="text-sm text-gray-600">{match.league}</span>
         <span className={`text-sm font-semibold ${getStatusColor(match.status)}`}>
           {getStatusText(match.status)}
+          {match.status === 'not_started' && match.date && (
+            <span className="ml-2 text-gray-500">{formatMatchTime(match.date)}</span>
+          )}
         </span>
       </div>
 
