@@ -1,11 +1,18 @@
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "out"
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
-  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+# Statik site için basit yönlendirme
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -21,12 +28,6 @@
 [build.processing.js]
   bundle = true
   minify = true
-
-# Tüm istekleri Next.js uygulamasına yönlendir
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/next"
-  status = 200
 
 [create]
   publish_dir = ".next"
