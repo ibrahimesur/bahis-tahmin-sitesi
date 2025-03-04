@@ -29,17 +29,32 @@ export default async function handler(
   }
 
   try {
-    // Bugünün tarihini al
+    // Tarih aralığı oluştur (son 7 gün ve gelecek 7 gün)
     const today = new Date();
-    const dateStr = today.toISOString().split('T')[0];
+    
+    // 7 gün öncesi
+    const pastDate = new Date(today);
+    pastDate.setDate(today.getDate() - 7);
+    const pastDateStr = pastDate.toISOString().split('T')[0];
+    
+    // 7 gün sonrası
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + 7);
+    const futureDateStr = futureDate.toISOString().split('T')[0];
+    
+    // Bugünün tarihi
+    const todayStr = today.toISOString().split('T')[0];
 
     // Sadece istediğimiz liglerin maçlarını al
     const leagueIds = Object.keys(AVAILABLE_LEAGUES).join(',');
-    const url = `${API_URL}/matches?date=${dateStr}&competitions=${leagueIds}`;
+    
+    // Tarih aralığı için API isteği yap
+    const url = `${API_URL}/matches?dateFrom=${pastDateStr}&dateTo=${futureDateStr}&competitions=${leagueIds}`;
 
     console.log('API isteği yapılıyor:', {
       url,
-      date: dateStr,
+      dateRange: `${pastDateStr} - ${futureDateStr}`,
+      today: todayStr,
       headers: { 'X-Auth-Token': 'API_KEY_MEVCUT' }
     });
 
