@@ -13,7 +13,13 @@ interface PageProps {
 
 export default function Page({ title, content, slug }: PageProps) {
   return (
-    <PageLayout title={title} content={content} />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">{title}</h1>
+      <div 
+        className="prose max-w-none"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    </div>
   );
 }
 
