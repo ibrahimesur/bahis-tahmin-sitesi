@@ -28,7 +28,17 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      // Yanıtın içeriğini text olarak al
+      const responseText = await response.text();
+      
+      // Yanıtın JSON formatında olup olmadığını kontrol et
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('API yanıtı JSON formatında değil:', responseText);
+        throw new Error('Sunucu yanıtı geçersiz format içeriyor. Lütfen daha sonra tekrar deneyin.');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Giriş başarısız');
@@ -40,6 +50,7 @@ export default function LoginPage() {
       // Ana sayfaya yönlendir
       router.push('/');
     } catch (err) {
+      console.error('Giriş hatası:', err);
       setError(err instanceof Error ? err.message : 'Bir hata oluştu');
     } finally {
       setIsLoading(false);
