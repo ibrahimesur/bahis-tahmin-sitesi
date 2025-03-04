@@ -27,4 +27,11 @@
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false 
+  force = false
+
+[create]
+  publish_dir = ".next"
+  content_dir = "content"
+  base_dir = "."
+  dev_command = "npm run dev"
+  build_command = "npm run build" 
