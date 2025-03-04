@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import Link from 'next/link';
 import Image from 'next/image';
+import { FaFutbol, FaUsers, FaChartLine, FaTicketAlt } from 'react-icons/fa';
 
 // Maç tipi tanımı
 interface Match {
@@ -211,15 +212,18 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Günün Önemli Maçları */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Günün Önemli Maçları</h2>
+            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+              <div className="flex items-center space-x-2 mb-4">
+                <FaFutbol className="text-blue-600 text-xl" />
+                <h2 className="text-xl font-bold text-gray-800">Günün Önemli Maçları</h2>
+              </div>
               
               {loading ? (
                 <div className="flex justify-center items-center h-40">
                   <p>Yükleniyor...</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-3 flex-grow">
                   {matches.map((match) => (
                     <Link href={`/matches/${match.id}`} key={match.id}>
                       <div className="border border-gray-200 rounded-lg p-3 hover:bg-blue-50 transition cursor-pointer">
@@ -278,15 +282,18 @@ export default function HomePage() {
             </div>
             
             {/* Editörlerin Profilleri */}
-            <div className="col-span-1 bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Editörlerimiz</h2>
+            <div className="col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+              <div className="flex items-center space-x-2 mb-4">
+                <FaUsers className="text-green-600 text-xl" />
+                <h2 className="text-xl font-bold text-gray-800">Editörlerimiz</h2>
+              </div>
               
               {loading ? (
                 <div className="flex justify-center items-center h-40">
                   <p>Yükleniyor...</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 flex-grow">
                   {editors.map((editor) => (
                     <Link href={`/editors/${editor.id}`} key={editor.id}>
                       <div className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer">
@@ -325,15 +332,18 @@ export default function HomePage() {
             </div>
             
             {/* Tahmin Bölümü */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Günün Tahminleri</h2>
+            <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+              <div className="flex items-center space-x-2 mb-4">
+                <FaChartLine className="text-purple-600 text-xl" />
+                <h2 className="text-xl font-bold text-gray-800">Günün Tahminleri</h2>
+              </div>
               
               {loading ? (
                 <div className="flex justify-center items-center h-40">
                   <p>Yükleniyor...</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 flex-grow">
                   {predictions.map((prediction) => (
                     <div key={prediction.id} className="border border-gray-200 rounded-lg p-3 hover:bg-blue-50 transition">
                       <div className="flex items-center justify-between mb-2">
@@ -411,16 +421,19 @@ export default function HomePage() {
             </div>
             
             {/* Günün Kuponu */}
-            <div className="col-span-1 bg-white rounded-lg shadow-md p-4">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Günün Kuponu</h2>
+            <div className="col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+              <div className="flex items-center space-x-2 mb-4">
+                <FaTicketAlt className="text-orange-600 text-xl" />
+                <h2 className="text-xl font-bold text-gray-800">Günün Kuponu</h2>
+              </div>
               
               {loading ? (
                 <div className="flex justify-center items-center h-40">
                   <p>Yükleniyor...</p>
                 </div>
               ) : coupon ? (
-                <div>
-                  <div className="space-y-3 mb-4">
+                <div className="flex flex-col h-full">
+                  <div className="space-y-3 mb-4 flex-grow">
                     {coupon.matches.map((item, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
@@ -448,7 +461,7 @@ export default function HomePage() {
                     ))}
                   </div>
                   
-                  <div className="border-t border-gray-200 pt-3">
+                  <div className="border-t border-gray-200 pt-3 mt-auto">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Toplam Oran:</span>
                       <span className="font-bold text-lg text-orange-600">
