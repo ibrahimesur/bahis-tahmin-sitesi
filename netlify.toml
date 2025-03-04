@@ -1,13 +1,11 @@
 [build]
   command = "npx prisma generate --schema=./prisma/schema.prisma && npm run build"
-  publish = ".next"
+  publish = "out"
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
-
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
 [functions]
   node_bundler = "esbuild"
@@ -21,20 +19,10 @@
   bundle = true
   minify = true
 
-# Next.js için özel redirects ayarları
-[[redirects]]
-  from = "/_next/static/*"
-  to = "/_next/static/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/nextjs-server/api/:splat"
-  status = 200
-
+# Statik site için basit yönlendirme
 [[redirects]]
   from = "/*"
-  to = "/.netlify/functions/nextjs-server"
+  to = "/index.html"
   status = 200
   force = false
 
