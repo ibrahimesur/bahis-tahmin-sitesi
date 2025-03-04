@@ -15,6 +15,11 @@ export default async function handler(
   console.log('Maç detayları API isteği alındı:', id);
   console.log('API_KEY:', API_KEY ? 'Mevcut' : 'Eksik');
 
+  if (!id || Array.isArray(id)) {
+    console.error('Geçersiz maç ID\'si:', id);
+    return res.status(400).json({ error: 'Geçerli bir maç ID\'si gerekli' });
+  }
+
   if (!API_KEY) {
     console.error('API anahtarı bulunamadı');
     return res.status(500).json({ error: 'API yapılandırması eksik' });
