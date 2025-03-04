@@ -161,47 +161,103 @@ export default async function handler(
       const statsData = await statsResponse.json();
       console.log('Ham istatistik verisi:', JSON.stringify(statsData, null, 2));
 
-      // API yanıtını kontrol et ve doğrudan maç verilerinden istatistikleri al
-      stats = {
-        shots: {
-          home: matchData.homeTeam.statistics?.shots || 0,
-          away: matchData.awayTeam.statistics?.shots || 0
-        },
-        shotsOnTarget: {
-          home: matchData.homeTeam.statistics?.shotsOnTarget || 0,
-          away: matchData.awayTeam.statistics?.shotsOnTarget || 0
-        },
-        possession: {
-          home: parseInt(matchData.homeTeam.statistics?.possession || '0'),
-          away: parseInt(matchData.awayTeam.statistics?.possession || '0')
-        },
-        corners: {
-          home: matchData.homeTeam.statistics?.corners || 0,
-          away: matchData.awayTeam.statistics?.corners || 0
-        },
-        fouls: {
-          home: matchData.homeTeam.statistics?.fouls || 0,
-          away: matchData.awayTeam.statistics?.fouls || 0
-        },
-        yellowCards: {
-          home: matchData.homeTeam.statistics?.yellowCards || 0,
-          away: matchData.awayTeam.statistics?.yellowCards || 0
-        },
-        redCards: {
-          home: matchData.homeTeam.statistics?.redCards || 0,
-          away: matchData.awayTeam.statistics?.redCards || 0
+      try {
+        // API yanıtını kontrol et
+        if (!statsData.statistics || !Array.isArray(statsData.statistics)) {
+          console.log('Geçersiz istatistik verisi formatı:', statsData);
+          throw new Error('Geçersiz istatistik verisi formatı');
         }
-      };
 
-      // Eğer possession değerleri toplamı 100 değilse düzelt
-      if (stats.possession.home + stats.possession.away !== 100) {
-        stats.possession.home = 50;
-        stats.possession.away = 50;
+        // İstatistikleri doğru şekilde çıkar
+        const homeStats = statsData.statistics.find((stat: any) => stat.team.id === matchData.homeTeam.id);
+        const awayStats = statsData.statistics.find((stat: any) => stat.team.id === matchData.awayTeam.id);
+
+        if (!homeStats || !awayStats) {
+          console.log('Takım istatistikleri bulunamadı:', { homeStats, awayStats });
+          throw new Error('Takım istatistikleri bulunamadı');
+        }
+
+        console.log('Ev sahibi istatistikleri:', homeStats);
+        console.log('Deplasman istatistikleri:', awayStats);
+
+        // Yardımcı fonksiyon - istatistik değerini bul ve temizle
+        const cleanStatValue = (value: string | number) => {
+          if (typeof value === 'number') return value;
+          // Yüzde işaretini kaldır ve sayıya çevir
+          return parseInt(value.replace('%', '')) || 0;
+        };
+
+        const findStatValue = (stats: any, type: string) => {
+          if (!stats || !stats.statistics) {
+            console.log(`${type} için istatistik bulunamadı:`, stats);
+            return 0;
+          }
+          const stat = stats.statistics.find((s: any) => s.type === type);
+          if (!stat) {
+            console.log(`${type} için değer bulunamadı:`, stats.statistics);
+            return 0;
+          }
+          
+          const value = cleanStatValue(stat.value);
+          console.log(`${type} değeri:`, value);
+          return value;
+        };
+
+        stats = {
+          shots: {
+            home: findStatValue(homeStats, 'Total Shots'),
+            away: findStatValue(awayStats, 'Total Shots')
+          },
+          shotsOnTarget: {
+            home: findStatValue(homeStats, 'Shots on Goal'),
+            away: findStatValue(awayStats, 'Shots on Goal')
+          },
+          possession: {
+            home: findStatValue(homeStats, 'Ball Possession'),
+            away: findStatValue(awayStats, 'Ball Possession')
+          },
+          corners: {
+            home: findStatValue(homeStats, 'Corner Kicks'),
+            away: findStatValue(awayStats, 'Corner Kicks')
+          },
+          fouls: {
+            home: findStatValue(homeStats, 'Fouls'),
+            away: findStatValue(awayStats, 'Fouls')
+          },
+          yellowCards: {
+            home: findStatValue(homeStats, 'Yellow Cards'),
+            away: findStatValue(awayStats, 'Yellow Cards')
+          },
+          redCards: {
+            home: findStatValue(homeStats, 'Red Cards'),
+            away: findStatValue(awayStats, 'Red Cards')
+          }
+        };
+
+        // Eğer possession değerleri toplamı 100 değilse düzelt
+        if (stats.possession.home + stats.possession.away !== 100) {
+          console.log('Topla oynama yüzdesi düzeltiliyor:', stats.possession);
+          stats.possession.home = 50;
+          stats.possession.away = 50;
+        }
+
+        console.log('İşlenmiş istatistikler:', stats);
+      } catch (error) {
+        console.error('İstatistik işleme hatası:', error);
+        // Hata durumunda varsayılan değerler
+        stats = {
+          shots: { home: 0, away: 0 },
+          shotsOnTarget: { home: 0, away: 0 },
+          possession: { home: 50, away: 50 },
+          corners: { home: 0, away: 0 },
+          fouls: { home: 0, away: 0 },
+          yellowCards: { home: 0, away: 0 },
+          redCards: { home: 0, away: 0 }
+        };
       }
-
-      console.log('İşlenmiş istatistikler:', stats);
     } else {
-      console.log('İstatistik API yanıtı başarısız:', await statsResponse.text());
+      const errorText = await statsResponse.text();
+      console.error('İstatistik API yanıtı başarısız:', errorText);
       // API'den veri alınamazsa varsayılan değerler
       stats = {
         shots: { home: 0, away: 0 },

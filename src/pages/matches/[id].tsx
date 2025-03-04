@@ -51,27 +51,50 @@ export default function MatchDetailPage() {
 
   // Stat bar component
   const StatBar = ({ label, home, away, isPercentage }: { label: string; home: number; away: number; isPercentage: boolean }) => {
-    const total = isPercentage ? 100 : home + away;
+    const total = home + away;
     const homePercent = total > 0 ? (home / total) * 100 : 50;
     const awayPercent = total > 0 ? (away / total) * 100 : 50;
 
-    return (
-      <div className="flex items-center gap-4 w-full">
-        <div className="w-16 text-right font-semibold">{home}{isPercentage ? '%' : ''}</div>
-        <div className="flex-1">
-          <div className="text-sm text-gray-600 text-center mb-1">{label}</div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+    // Topla oynama için özel hesaplama
+    if (label === "Topla Oynama") {
+      return (
+        <div className="mb-4">
+          <div className="flex justify-between text-sm text-gray-600 mb-1">
+            <span>%{home}</span>
+            <span>{label}</span>
+            <span>%{away}</span>
+          </div>
+          <div className="flex h-2 bg-gray-200 rounded overflow-hidden">
             <div
-              className="h-full bg-blue-500 float-left rounded-r"
-              style={{ width: `${homePercent}%` }}
+              className="bg-blue-500"
+              style={{ width: `${home}%` }}
             />
             <div
-              className="h-full bg-red-500 float-right rounded-l"
-              style={{ width: `${awayPercent}%` }}
+              className="bg-red-500"
+              style={{ width: `${away}%` }}
             />
           </div>
         </div>
-        <div className="w-16 text-left font-semibold">{away}{isPercentage ? '%' : ''}</div>
+      );
+    }
+
+    return (
+      <div className="mb-4">
+        <div className="flex justify-between text-sm text-gray-600 mb-1">
+          <span>{home}</span>
+          <span>{label}</span>
+          <span>{away}</span>
+        </div>
+        <div className="flex h-2 bg-gray-200 rounded overflow-hidden">
+          <div
+            className="bg-blue-500"
+            style={{ width: `${homePercent}%` }}
+          />
+          <div
+            className="bg-red-500"
+            style={{ width: `${awayPercent}%` }}
+          />
+        </div>
       </div>
     );
   };
