@@ -1,19 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { LiveScore } from '../../types';
+import { LiveScore, ApiFootballFixture } from '../../types';
 
-const API_KEY = process.env.FOOTBALL_DATA_API_KEY;
-const API_URL = 'https://api.football-data.org/v4';
+// API-Football bilgileri
+const API_KEY = process.env.FOOTBALL_API_KEY;
+const API_HOST = 'api-football-v1.p.rapidapi.com';
+const API_URL = 'https://api-football-v1.p.rapidapi.com/v3';
 
+// Desteklenen ligler ve ID'leri
 const AVAILABLE_LEAGUES = {
-  'PL': 'Premier League',
-  'BL1': 'Bundesliga',
-  'SA': 'Serie A',
-  'PD': 'La Liga',
-  'FL1': 'Ligue 1',
-  'CL': 'UEFA Champions League',
-  'ELC': 'Championship',
-  'PPL': 'Primeira Liga',
-  'DED': 'Eredivisie'
+  '39': 'Premier League',
+  '78': 'Bundesliga',
+  '135': 'Serie A',
+  '140': 'La Liga',
+  '61': 'Ligue 1',
+  '2': 'UEFA Champions League',
+  '40': 'Championship',
+  '94': 'Primeira Liga',
+  '88': 'Eredivisie'
 };
 
 export default async function handler(
@@ -46,21 +49,25 @@ export default async function handler(
     const todayStr = today.toISOString().split('T')[0];
 
     // Sadece istediğimiz liglerin maçlarını al
-    const leagueIds = Object.keys(AVAILABLE_LEAGUES).join(',');
+    const leagueIds = Object.keys(AVAILABLE_LEAGUES).join('-');
     
     // Tarih aralığı için API isteği yap
-    const url = `${API_URL}/matches?dateFrom=${pastDateStr}&dateTo=${futureDateStr}&competitions=${leagueIds}`;
+    const url = `${API_URL}/fixtures?league=${leagueIds}&from=${pastDateStr}&to=${futureDateStr}`;
 
     console.log('API isteği yapılıyor:', {
       url,
       dateRange: `${pastDateStr} - ${futureDateStr}`,
       today: todayStr,
-      headers: { 'X-Auth-Token': 'API_KEY_MEVCUT' }
+      headers: { 
+        'X-RapidAPI-Key': 'API_KEY_MEVCUT',
+        'X-RapidAPI-Host': API_HOST
+      }
     });
 
     const response = await fetch(url, {
       headers: {
-        'X-Auth-Token': API_KEY
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': API_HOST
       }
     });
 
@@ -85,126 +92,51 @@ export default async function handler(
     }
 
     const data = await response.json();
-    console.log('API yanıtı:', JSON.stringify(data, null, 2));
-
-    // Her maçın durumunu kontrol edelim
-    data.matches.forEach((match: any) => {
-      console.log(`${match.homeTeam.name} vs ${match.awayTeam.name}:`, {
-        status: match.status,
-        utcDate: match.utcDate,
-        competition: match.competition.name,
-        score: match.score
-      });
-    });
-
-    if (!data.matches || !Array.isArray(data.matches)) {
-      console.error('Geçersiz API yanıtı:', data);
-      return res.status(500).json({ error: 'Geçersiz API yanıtı' });
-    }
+    console.log('API yanıtı alındı, maç sayısı:', data.response?.length || 0);
     
-    const getMatchStatus = (status: string): LiveScore['status'] => {
-      switch (status) {
-        case 'IN_PLAY':
-        case 'PAUSED':
-        case 'FIRST_HALF':
-        case 'SECOND_HALF':
-          return 'live';
-        case 'FINISHED':
-          return 'finished';
-        case 'SCHEDULED':
-        case 'TIMED':
-          return 'not_started';
-        default:
-          console.log('Bilinmeyen maç durumu:', status);
-          return 'not_started';
-      }
-    };
+    if (!data.response || !Array.isArray(data.response)) {
+      console.error('API yanıtı geçersiz format içeriyor:', data);
+      return res.status(500).json({ error: 'API yanıtı geçersiz format içeriyor' });
+    }
 
-    const matches = data.matches.map((match: any) => {
-      // Debug için maç bilgilerini logla
-      console.log('Ham maç verisi:', {
-        match: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
-        status: match.status,
-        minute: match.minute,
-        utcDate: match.utcDate,
-        lastUpdated: match.lastUpdated
-      });
+    // API-Football'dan gelen veriyi bizim formatımıza dönüştürüyoruz
+    const formattedMatches: LiveScore[] = data.response.map((match: ApiFootballFixture) => ({
+      id: match.fixture.id.toString(),
+      homeTeam: {
+        name: match.teams.home.name,
+        score: match.goals.home || 0,
+        redCards: match.events?.filter(e => 
+          e.team.id === match.teams.home.id && e.type === 'Card' && e.detail === 'Red Card'
+        ).length || 0,
+        logo: match.teams.home.logo
+      },
+      awayTeam: {
+        name: match.teams.away.name,
+        score: match.goals.away || 0,
+        redCards: match.events?.filter(e => 
+          e.team.id === match.teams.away.id && e.type === 'Card' && e.detail === 'Red Card'
+        ).length || 0,
+        logo: match.teams.away.logo
+      },
+      minute: match.fixture.status.elapsed || 0,
+      league: match.league.name,
+      status: match.fixture.status.short === 'LIVE' || match.fixture.status.short === 'HT' || match.fixture.status.short === '1H' || match.fixture.status.short === '2H' ? 'live' : 
+              match.fixture.status.short === 'FT' || match.fixture.status.short === 'AET' || match.fixture.status.short === 'PEN' ? 'finished' : 'not_started',
+      events: match.events?.map(event => ({
+        id: `${event.time.elapsed}-${event.team.id}-${event.player.id || '0'}`,
+        type: event.type === 'Goal' ? 'goal' :
+              event.type === 'Card' && event.detail === 'Red Card' ? 'red_card' :
+              event.type === 'Card' && event.detail === 'Yellow Card' ? 'yellow_card' :
+              event.type === 'subst' ? 'substitution' : 'other',
+        minute: event.time.elapsed,
+        team: event.team.id === match.teams.home.id ? 'home' : 'away',
+        playerName: event.player.name
+      })) || []
+    }));
 
-      // Dakika hesaplama fonksiyonu
-      const calculateMinute = (match: any) => {
-        if (match.status === 'FINISHED') return 90;
-        if (match.status === 'HALF_TIME') return 45;
-        if (match.status === 'SCHEDULED' || match.status === 'TIMED') return 0;
-
-        // Canlı maçlar için dakika hesaplama
-        if (match.status === 'IN_PLAY' || match.status === 'PAUSED') {
-          const startTime = new Date(match.utcDate);
-          const now = new Date();
-          const diffMinutes = Math.floor((now.getTime() - startTime.getTime()) / 60000);
-          
-          // İlk yarı
-          if (diffMinutes <= 45) return diffMinutes;
-          // Devre arası
-          if (diffMinutes > 45 && diffMinutes < 60) return 45;
-          // İkinci yarı
-          return Math.min(90, diffMinutes - 15); // 15 dakika devre arası çıkarıldı
-        }
-
-        return 0;
-      };
-
-      return {
-        id: match.id.toString(),
-        homeTeam: {
-          name: match.homeTeam.name || match.homeTeam.shortName,
-          score: match.score.fullTime.home || match.score.halfTime.home || 0,
-          redCards: match.score.redCards?.home || 0,
-          logo: match.homeTeam.crest
-        },
-        awayTeam: {
-          name: match.awayTeam.name || match.awayTeam.shortName,
-          score: match.score.fullTime.away || match.score.halfTime.away || 0,
-          redCards: match.score.redCards?.away || 0,
-          logo: match.awayTeam.crest
-        },
-        minute: calculateMinute(match),
-        league: match.competition.name,
-        status: getMatchStatus(match.status),
-        events: []
-      };
-    });
-
-    const sortedMatches = matches.sort((a: LiveScore, b: LiveScore) => {
-      // Önce canlı maçları göster
-      if (a.status === 'live' && b.status !== 'live') return -1;
-      if (a.status !== 'live' && b.status === 'live') return 1;
-
-      // Sonra bugünün maçlarını göster
-      if (a.status === 'not_started' && b.status === 'finished') return -1;
-      if (a.status === 'finished' && b.status === 'not_started') return 1;
-
-      // Aynı durumdaki maçları dakikalarına göre sırala
-      if (a.status === b.status) {
-        if (a.status === 'live') {
-          return b.minute - a.minute; // Canlı maçları dakikaya göre ters sırala
-        }
-        if (a.status === 'finished') {
-          return b.minute - a.minute; // Bitmiş maçları en son oynanandan başla
-        }
-      }
-
-      return 0;
-    });
-
-    console.log('İşlenmiş maçlar:', sortedMatches.map((m: LiveScore) => ({
-      id: m.id,
-      teams: `${m.homeTeam.name} vs ${m.awayTeam.name}`,
-      status: m.status,
-      league: m.league
-    }))); // Debug için
-    res.status(200).json(sortedMatches);
+    res.status(200).json(formattedMatches);
   } catch (error) {
-    console.error('Sunucu hatası:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Bilinmeyen hata' });
+    console.error('API Hatası:', error);
+    res.status(500).json({ error: 'Maç verileri alınamadı' });
   }
 } 

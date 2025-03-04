@@ -1,8 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { MatchDetail } from '../../../types';
+import { MatchDetail, ApiFootballFixture, ApiFootballEvent, MatchEvent } from '../../../types';
 
-const API_KEY = process.env.FOOTBALL_DATA_API_KEY;
-const API_URL = 'https://api.football-data.org/v4';
+// API-Football bilgileri
+const API_KEY = process.env.FOOTBALL_API_KEY;
+const API_HOST = 'api-football-v1.p.rapidapi.com';
+const API_URL = 'https://api-football-v1.p.rapidapi.com/v3';
 
 export default async function handler(
   req: NextApiRequest,
@@ -31,11 +33,13 @@ export default async function handler(
     });
 
     // Maç detayları
-    console.log(`Maç detayları için API isteği yapılıyor: ${API_URL}/matches/${id}`);
+    console.log(`Maç detayları için API isteği yapılıyor: ${API_URL}/fixtures?id=${id}`);
     
-    const matchResponse = await fetch(`${API_URL}/matches/${id}`, {
-      headers: { 'X-Auth-Token': API_KEY },
-      next: { revalidate: 60 } // 60 saniye önbellekleme
+    const matchResponse = await fetch(`${API_URL}/fixtures?id=${id}`, {
+      headers: { 
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': API_HOST
+      }
     }).catch(error => {
       console.error('Maç detayları API hatası:', error);
       return res.status(500).json({ error: 'Maç detayları alınamadı' });
@@ -50,364 +54,270 @@ export default async function handler(
     }
 
     const matchData = await matchResponse.json().catch(error => {
-      console.error('Maç detayları JSON parse hatası:', error);
-      return res.status(500).json({ error: 'Maç detayları işlenemedi' });
+      console.error('Maç detayları JSON ayrıştırma hatası:', error);
+      return res.status(500).json({ error: 'Maç detayları ayrıştırılamadı' });
     });
 
-    if (!matchData) {
-      console.error('Maç detayları bulunamadı');
-      return res.status(500).json({ error: 'Maç detayları bulunamadı' });
+    if (!matchData.response || !Array.isArray(matchData.response) || matchData.response.length === 0) {
+      console.error('Maç detayları bulunamadı:', matchData);
+      return res.status(404).json({ error: 'Maç detayları bulunamadı' });
     }
 
-    // Takım kadrolarını döndüren yardımcı fonksiyon
-    const getTeamSquad = (teamName: string, formation: string) => {
-      // Takıma özel kadro bilgileri
-      const squadData: { [key: string]: any } = {
-        'Paris Saint-Germain': {
-          formation: '4-3-3',
-          players: {
-            starters: [
-              { id: 1, name: 'Donnarumma', number: 1, position: 'Goalkeeper' },
-              { id: 2, name: 'Hakimi', number: 2, position: 'Defender' },
-              { id: 3, name: 'Marquinhos', number: 5, position: 'Defender' },
-              { id: 4, name: 'Skriniar', number: 3, position: 'Defender' },
-              { id: 5, name: 'L. Hernandez', number: 21, position: 'Defender' },
-              { id: 6, name: 'Zaïre-Emery', number: 33, position: 'Midfielder' },
-              { id: 7, name: 'Vitinha', number: 17, position: 'Midfielder' },
-              { id: 8, name: 'Ugarte', number: 4, position: 'Midfielder' },
-              { id: 9, name: 'Dembélé', number: 10, position: 'Forward' },
-              { id: 10, name: 'Mbappé', number: 7, position: 'Forward' },
-              { id: 11, name: 'Kolo Muani', number: 23, position: 'Forward' }
-            ],
-            substitutes: [
-              { id: 12, name: 'Tenas', number: 80, position: 'Goalkeeper' },
-              { id: 13, name: 'Danilo', number: 15, position: 'Defender' },
-              { id: 14, name: 'Soler', number: 28, position: 'Midfielder' },
-              { id: 15, name: 'Asensio', number: 11, position: 'Forward' }
-            ],
-            coach: 'Luis Enrique'
-          }
-        },
-        'Olympique Lyonnais': {
-          formation: '4-2-3-1',
-          players: {
-            starters: [
-              { id: 1, name: 'Lopes', number: 1, position: 'Goalkeeper' },
-              { id: 2, name: 'Mata', number: 15, position: 'Defender' },
-              { id: 3, name: 'Lovren', number: 6, position: 'Defender' },
-              { id: 4, name: 'Caleta-Car', number: 4, position: 'Defender' },
-              { id: 5, name: 'Tagliafico', number: 3, position: 'Defender' },
-              { id: 6, name: 'Caqueret', number: 25, position: 'Midfielder' },
-              { id: 7, name: 'Tolisso', number: 88, position: 'Midfielder' },
-              { id: 8, name: 'Nuamah', number: 27, position: 'Midfielder' },
-              { id: 9, name: 'Cherki', number: 18, position: 'Midfielder' },
-              { id: 10, name: 'Moreira', number: 11, position: 'Midfielder' },
-              { id: 11, name: 'Lacazette', number: 10, position: 'Forward' }
-            ],
-            substitutes: [
-              { id: 12, name: 'Riou', number: 30, position: 'Goalkeeper' },
-              { id: 13, name: 'Kumbedi', number: 26, position: 'Defender' },
-              { id: 14, name: 'Lepenant', number: 24, position: 'Midfielder' },
-              { id: 15, name: 'Baldé', number: 7, position: 'Forward' }
-            ],
-            coach: 'Fabio Grosso'
-          }
-        }
-        // Diğer takımlar için benzer veriler eklenebilir
-      };
+    const match: ApiFootballFixture = matchData.response[0];
 
-      // Takım verisi yoksa varsayılan kadro
-      const defaultSquad = {
-        formation: formation,
-        players: {
-          starters: Array(11).fill(null).map((_, i) => ({
-            id: i + 1,
-            name: `${teamName} Oyuncu ${i + 1}`,
-            number: i + 1,
-            position: i === 0 ? 'Goalkeeper' :
-                     i <= 4 ? 'Defender' :
-                     i <= 8 ? 'Midfielder' : 'Forward'
-          })),
-          substitutes: Array(4).fill(null).map((_, i) => ({
-            id: i + 12,
-            name: `${teamName} Yedek ${i + 1}`,
-            number: i + 12,
-            position: i === 0 ? 'Goalkeeper' :
-                     i === 1 ? 'Defender' :
-                     i === 2 ? 'Midfielder' : 'Forward'
-          })),
-          coach: `${teamName} Teknik Direktörü`
-        }
-      };
-
-      return squadData[teamName] || defaultSquad;
-    };
-
-    // lineups oluşturulurken:
-    const homeSquad = getTeamSquad(matchData.homeTeam.name, '4-4-2');
-    const awaySquad = getTeamSquad(matchData.awayTeam.name, '4-3-3');
-
-    const lineups = {
-      home: {
-        team: {
-          id: matchData.homeTeam.id,
-          name: matchData.homeTeam.name,
-          logo: matchData.homeTeam.crest
-        },
-        formation: homeSquad.formation,
-        startingXI: homeSquad.players.starters,
-        substitutes: homeSquad.players.substitutes,
-        coach: {
-          id: 1,
-          name: homeSquad.players.coach,
-          photo: undefined,
-          nationality: 'TR'
-        }
-      },
-      away: {
-        team: {
-          id: matchData.awayTeam.id,
-          name: matchData.awayTeam.name,
-          logo: matchData.awayTeam.crest
-        },
-        formation: awaySquad.formation,
-        startingXI: awaySquad.players.starters,
-        substitutes: awaySquad.players.substitutes,
-        coach: {
-          id: 2,
-          name: awaySquad.players.coach,
-          photo: undefined,
-          nationality: 'TR'
-        }
+    // İstatistikler
+    console.log(`Maç istatistikleri için API isteği yapılıyor: ${API_URL}/fixtures/statistics?fixture=${id}`);
+    
+    const statsResponse = await fetch(`${API_URL}/fixtures/statistics?fixture=${id}`, {
+      headers: { 
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': API_HOST
       }
-    };
-
-    // Maç istatistikleri için ayrı istek
-    const statsResponse = await fetch(`${API_URL}/matches/${id}/statistics`, {
-      headers: { 'X-Auth-Token': API_KEY },
-      next: { revalidate: 60 } // 60 saniye önbellekleme
     }).catch(error => {
-      console.error('İstatistik API hatası:', error);
-      return null;
+      console.error('Maç istatistikleri API hatası:', error);
+      // İstatistik hatası kritik değil, devam ediyoruz
     });
 
-    let stats;
+    let stats = getDefaultStats();
+    
     if (statsResponse?.ok) {
-      try {
-        const statsData = await statsResponse.json().catch(error => {
-          console.error('İstatistik JSON parse hatası:', error);
-          return null;
-        });
-
-        if (!statsData) {
-          console.log('İstatistik verisi alınamadı, varsayılan değerler kullanılıyor');
-          stats = getDefaultStats();
-        } else {
-          // API yanıtını kontrol et
-          if (!statsData.statistics || !Array.isArray(statsData.statistics)) {
-            console.log('Geçersiz istatistik verisi formatı:', statsData);
-            stats = getDefaultStats();
-          } else {
-            // İstatistikleri doğru şekilde çıkar
-            const homeStats = statsData.statistics.find((stat: any) => stat.team.id === matchData.homeTeam.id);
-            const awayStats = statsData.statistics.find((stat: any) => stat.team.id === matchData.awayTeam.id);
-
-            if (!homeStats || !awayStats) {
-              console.log('Takım istatistikleri bulunamadı:', { homeStats, awayStats });
-              stats = getDefaultStats();
-            } else {
-              // Yardımcı fonksiyon - istatistik değerini bul ve temizle
-              const cleanStatValue = (value: string | number) => {
-                if (typeof value === 'number') return value;
-                if (typeof value !== 'string') return 0;
-                // Yüzde işaretini kaldır ve sayıya çevir
-                return parseInt(value.replace('%', '')) || 0;
-              };
-
-              const findStatValue = (stats: any, type: string) => {
-                try {
-                  if (!stats || !stats.statistics) {
-                    console.log(`${type} için istatistik bulunamadı:`, stats);
-                    return 0;
-                  }
-                  const stat = stats.statistics.find((s: any) => s.type === type);
-                  if (!stat) {
-                    console.log(`${type} için değer bulunamadı:`, stats.statistics);
-                    return 0;
-                  }
-                  
-                  const value = cleanStatValue(stat.value);
-                  console.log(`${type} değeri:`, value);
-                  return value;
-                } catch (error) {
-                  console.error(`${type} değeri işlenirken hata:`, error);
-                  return 0;
-                }
-              };
-
-              stats = {
-                shots: {
-                  home: findStatValue(homeStats, 'Total Shots'),
-                  away: findStatValue(awayStats, 'Total Shots')
-                },
-                shotsOnTarget: {
-                  home: findStatValue(homeStats, 'Shots on Goal'),
-                  away: findStatValue(awayStats, 'Shots on Goal')
-                },
-                possession: {
-                  home: findStatValue(homeStats, 'Ball Possession'),
-                  away: findStatValue(awayStats, 'Ball Possession')
-                },
-                corners: {
-                  home: findStatValue(homeStats, 'Corner Kicks'),
-                  away: findStatValue(awayStats, 'Corner Kicks')
-                },
-                fouls: {
-                  home: findStatValue(homeStats, 'Fouls'),
-                  away: findStatValue(awayStats, 'Fouls')
-                },
-                yellowCards: {
-                  home: findStatValue(homeStats, 'Yellow Cards'),
-                  away: findStatValue(awayStats, 'Yellow Cards')
-                },
-                redCards: {
-                  home: findStatValue(homeStats, 'Red Cards'),
-                  away: findStatValue(awayStats, 'Red Cards')
-                }
-              };
-
-              // Eğer possession değerleri toplamı 100 değilse düzelt
-              if (stats.possession.home + stats.possession.away !== 100) {
-                console.log('Topla oynama yüzdesi düzeltiliyor:', stats.possession);
-                stats.possession.home = 50;
-                stats.possession.away = 50;
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('İstatistik işleme hatası:', error);
-        stats = getDefaultStats();
-      }
-    } else {
-      const errorText = await statsResponse?.text().catch(() => 'Bilinmeyen hata');
-      console.error('İstatistik API yanıtı başarısız:', errorText);
-      stats = getDefaultStats();
-    }
-
-    // Debug için istatistikleri logla
-    console.log('Maç detayları:', {
-      id,
-      homeTeam: matchData.homeTeam.name,
-      awayTeam: matchData.awayTeam.name,
-      status: matchData.status,
-      score: matchData.score,
-      venue: matchData.venue,
-      competition: matchData.competition.name
-    });
-
-    console.log('İstatistik verileri:', {
-      rawStats: matchData.statistics,
-      processedStats: stats,
-      homeTeamStats: statsResponse?.ok ? await statsResponse.json().catch(() => null) : null
-    });
-
-    // Hata durumlarını logla
-    if (!statsResponse?.ok) {
-      console.error('İstatistik API yanıtı başarısız:', {
-        status: statsResponse?.status,
-        statusText: statsResponse?.statusText,
-        error: await statsResponse?.text().catch(() => 'Bilinmeyen hata')
+      const statsData = await statsResponse.json().catch(error => {
+        console.error('Maç istatistikleri JSON ayrıştırma hatası:', error);
+        // İstatistik hatası kritik değil, devam ediyoruz
       });
+
+      if (statsData?.response && Array.isArray(statsData.response) && statsData.response.length >= 2) {
+        const homeStats = statsData.response[0]?.statistics || [];
+        const awayStats = statsData.response[1]?.statistics || [];
+
+        const findStatValue = (statArray: any[], type: string) => {
+          const stat = statArray.find(s => s.type === type);
+          if (!stat) return null;
+          
+          // Yüzde işaretini kaldır
+          if (typeof stat.value === 'string' && stat.value.includes('%')) {
+            return parseInt(stat.value.replace('%', ''));
+          }
+          
+          return stat.value || 0;
+        };
+
+        stats = {
+          shots: { 
+            home: findStatValue(homeStats, 'Total Shots') || 0, 
+            away: findStatValue(awayStats, 'Total Shots') || 0 
+          },
+          shotsOnTarget: { 
+            home: findStatValue(homeStats, 'Shots on Goal') || 0, 
+            away: findStatValue(awayStats, 'Shots on Goal') || 0 
+          },
+          possession: { 
+            home: findStatValue(homeStats, 'Ball Possession') || 50, 
+            away: findStatValue(awayStats, 'Ball Possession') || 50 
+          },
+          corners: { 
+            home: findStatValue(homeStats, 'Corner Kicks') || 0, 
+            away: findStatValue(awayStats, 'Corner Kicks') || 0 
+          },
+          fouls: { 
+            home: findStatValue(homeStats, 'Fouls') || 0, 
+            away: findStatValue(awayStats, 'Fouls') || 0 
+          },
+          yellowCards: { 
+            home: findStatValue(homeStats, 'Yellow Cards') || 0, 
+            away: findStatValue(awayStats, 'Yellow Cards') || 0 
+          },
+          redCards: { 
+            home: findStatValue(homeStats, 'Red Cards') || 0, 
+            away: findStatValue(awayStats, 'Red Cards') || 0 
+          }
+        };
+      }
     }
 
-    // H2H için örnek veri (API'den gelmiyorsa)
-    const h2h = Array(5).fill(null).map((_, i) => ({
-      id: `h2h-${i}`,
-      date: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      homeTeam: {
-        id: matchData.homeTeam.id,
-        name: matchData.homeTeam.name,
-        score: Math.floor(Math.random() * 4)
-      },
-      awayTeam: {
-        id: matchData.awayTeam.id,
-        name: matchData.awayTeam.name,
-        score: Math.floor(Math.random() * 4)
-      },
-      competition: {
-        id: matchData.competition.id,
-        name: matchData.competition.name
+    // Kadrolar
+    console.log(`Maç kadroları için API isteği yapılıyor: ${API_URL}/fixtures/lineups?fixture=${id}`);
+    
+    const lineupsResponse = await fetch(`${API_URL}/fixtures/lineups?fixture=${id}`, {
+      headers: { 
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': API_HOST
       }
+    }).catch(error => {
+      console.error('Maç kadroları API hatası:', error);
+      // Kadro hatası kritik değil, devam ediyoruz
+    });
+
+    let homeLineup = {
+      team: {
+        id: match.teams.home.id,
+        name: match.teams.home.name,
+        logo: match.teams.home.logo
+      },
+      formation: '4-4-2',
+      startingXI: [],
+      substitutes: [],
+      coach: {
+        id: 0,
+        name: 'Bilinmiyor',
+        photo: ''
+      }
+    };
+
+    let awayLineup = {
+      team: {
+        id: match.teams.away.id,
+        name: match.teams.away.name,
+        logo: match.teams.away.logo
+      },
+      formation: '4-4-2',
+      startingXI: [],
+      substitutes: [],
+      coach: {
+        id: 0,
+        name: 'Bilinmiyor',
+        photo: ''
+      }
+    };
+
+    if (lineupsResponse?.ok) {
+      const lineupsData = await lineupsResponse.json().catch(error => {
+        console.error('Maç kadroları JSON ayrıştırma hatası:', error);
+        // Kadro hatası kritik değil, devam ediyoruz
+      });
+
+      if (lineupsData?.response && Array.isArray(lineupsData.response) && lineupsData.response.length > 0) {
+        lineupsData.response.forEach((lineup: any) => {
+          const isHome = lineup.team.id === match.teams.home.id;
+          const currentLineup = isHome ? homeLineup : awayLineup;
+          
+          currentLineup.formation = lineup.formation || '4-4-2';
+          currentLineup.coach = {
+            id: lineup.coach.id || 0,
+            name: lineup.coach.name || 'Bilinmiyor',
+            photo: lineup.coach.photo || ''
+          };
+          
+          currentLineup.startingXI = (lineup.startXI || []).map((player: any, index: number) => ({
+            id: player.player.id || index + 1,
+            name: player.player.name || `Oyuncu ${index + 1}`,
+            number: player.player.number || index + 1,
+            position: player.player.pos || 'Bilinmiyor'
+          }));
+          
+          currentLineup.substitutes = (lineup.substitutes || []).map((player: any, index: number) => ({
+            id: player.player.id || index + 100,
+            name: player.player.name || `Yedek ${index + 1}`,
+            number: player.player.number || index + 20,
+            position: player.player.pos || 'Bilinmiyor'
+          }));
+        });
+      }
+    }
+
+    // Head to Head
+    console.log(`Head to Head için API isteği yapılıyor: ${API_URL}/fixtures/headtohead?h2h=${match.teams.home.id}-${match.teams.away.id}&last=5`);
+    
+    const h2hResponse = await fetch(`${API_URL}/fixtures/headtohead?h2h=${match.teams.home.id}-${match.teams.away.id}&last=5`, {
+      headers: { 
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': API_HOST
+      }
+    }).catch(error => {
+      console.error('Head to Head API hatası:', error);
+      // H2H hatası kritik değil, devam ediyoruz
+    });
+
+    let h2hMatches = [];
+    
+    if (h2hResponse?.ok) {
+      const h2hData = await h2hResponse.json().catch(error => {
+        console.error('Head to Head JSON ayrıştırma hatası:', error);
+        // H2H hatası kritik değil, devam ediyoruz
+      });
+
+      if (h2hData?.response && Array.isArray(h2hData.response)) {
+        h2hMatches = h2hData.response
+          .filter((h2hMatch: ApiFootballFixture) => h2hMatch.fixture.id && h2hMatch.fixture.id.toString() !== id.toString())
+          .slice(0, 5)
+          .map((h2hMatch: ApiFootballFixture) => ({
+            id: h2hMatch.fixture.id.toString(),
+            date: h2hMatch.fixture.date,
+            homeTeam: {
+              id: h2hMatch.teams.home.id,
+              name: h2hMatch.teams.home.name,
+              score: h2hMatch.goals.home || 0
+            },
+            awayTeam: {
+              id: h2hMatch.teams.away.id,
+              name: h2hMatch.teams.away.name,
+              score: h2hMatch.goals.away || 0
+            },
+            competition: {
+              id: h2hMatch.league.id,
+              name: h2hMatch.league.name
+            }
+          }));
+      }
+    }
+
+    // Olaylar (goller, kartlar, değişiklikler)
+    const events = match.events || [];
+    const formattedEvents = events.map((event: ApiFootballEvent) => ({
+      id: `${event.time.elapsed}-${event.team.id}-${event.player.id || '0'}`,
+      type: event.type === 'Goal' ? 'goal' :
+            event.type === 'Card' && event.detail === 'Red Card' ? 'red_card' :
+            event.type === 'Card' && event.detail === 'Yellow Card' ? 'yellow_card' :
+            event.type === 'subst' ? 'substitution' : 'other',
+      minute: event.time.elapsed,
+      team: event.team.id === match.teams.home.id ? 'home' : 'away',
+      playerName: event.player.name
     }));
 
-    // Dakika hesaplama fonksiyonu
-    const calculateMinute = (match: any) => {
-      if (match.status === 'FINISHED') return 90;
-      if (match.status === 'HALF_TIME') return 45;
-      if (match.status === 'SCHEDULED' || match.status === 'TIMED') return 0;
+    // Maç durumu
+    const matchStatus = match.fixture.status.short === 'LIVE' || match.fixture.status.short === 'HT' || match.fixture.status.short === '1H' || match.fixture.status.short === '2H' ? 'live' : 
+                        match.fixture.status.short === 'FT' || match.fixture.status.short === 'AET' || match.fixture.status.short === 'PEN' ? 'finished' : 'not_started';
 
-      // Canlı maçlar için dakika hesaplama
-      if (match.status === 'IN_PLAY' || match.status === 'PAUSED') {
-        const startTime = new Date(match.utcDate);
-        const now = new Date();
-        const diffMinutes = Math.floor((now.getTime() - startTime.getTime()) / 60000);
-        
-        // İlk yarı
-        if (diffMinutes <= 45) return diffMinutes;
-        // Devre arası
-        if (diffMinutes > 45 && diffMinutes < 60) return 45;
-        // İkinci yarı
-        return Math.min(90, diffMinutes - 15); // 15 dakika devre arası çıkarıldı
-      }
-
-      return 0;
-    };
-
-    // API yanıtını hazırla
-    const response: MatchDetail = {
-      id: matchData.id.toString(),
+    // Sonuç
+    const matchDetail: MatchDetail = {
+      id: match.fixture.id.toString(),
       homeTeam: {
-        name: matchData.homeTeam.name,
-        score: matchData.score.fullTime.home || matchData.score.halfTime.home || 0,
-        redCards: matchData.score.redCards?.home || 0,
-        logo: matchData.homeTeam.crest
+        name: match.teams.home.name,
+        score: match.goals.home || 0,
+        redCards: events.filter(e => e.team.id === match.teams.home.id && e.type === 'Card' && e.detail === 'Red Card').length,
+        logo: match.teams.home.logo
       },
       awayTeam: {
-        name: matchData.awayTeam.name,
-        score: matchData.score.fullTime.away || matchData.score.halfTime.away || 0,
-        redCards: matchData.score.redCards?.away || 0,
-        logo: matchData.awayTeam.crest
+        name: match.teams.away.name,
+        score: match.goals.away || 0,
+        redCards: events.filter(e => e.team.id === match.teams.away.id && e.type === 'Card' && e.detail === 'Red Card').length,
+        logo: match.teams.away.logo
       },
-      minute: calculateMinute(matchData),
-      league: matchData.competition.name,
-      status: matchData.status === 'FINISHED' ? 'finished' :
-              (matchData.status === 'IN_PLAY' || matchData.status === 'PAUSED') ? 'live' : 'not_started',
-      events: [],
+      minute: match.fixture.status.elapsed || 0,
+      league: match.league.name,
+      status: matchStatus as 'live' | 'finished' | 'not_started',
+      events: formattedEvents as MatchEvent[],
       venue: {
-        id: 1,
-        name: matchData.venue?.name || 'Stadyum',
-        city: matchData.venue?.city || 'Şehir'
+        id: match.fixture.venue?.id || 0,
+        name: match.fixture.venue?.name || 'Bilinmiyor',
+        city: match.fixture.venue?.city || 'Bilinmiyor'
       },
       referee: {
-        id: 1,
-        name: matchData.referee?.name || 'Hakem',
-        nationality: matchData.referee?.nationality || 'TR'
+        id: 0,
+        name: match.fixture.referee || 'Bilinmiyor',
+        nationality: 'Bilinmiyor'
       },
-      stats,
-      lineups,
-      h2h
+      stats: stats,
+      lineups: {
+        home: homeLineup,
+        away: awayLineup
+      },
+      h2h: h2hMatches
     };
 
-    // Yanıtı logla
-    console.log('API yanıtı:', {
-      status: 'success',
-      data: response
-    });
-
-    res.status(200).json(response);
+    res.status(200).json(matchDetail);
   } catch (error) {
     console.error('API Hatası:', error);
-    return res.status(500).json({ error: error instanceof Error ? error.message : 'Maç detayları alınamadı' });
+    res.status(500).json({ error: 'Maç detayları alınamadı' });
   }
 } 
