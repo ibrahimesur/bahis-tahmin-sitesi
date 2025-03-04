@@ -20,6 +20,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      console.log('Giriş denemesi başlatılıyor:', formData.email);
+      
+      // API isteği gönder
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -28,22 +31,29 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       });
 
+      console.log('API yanıtı alındı, durum kodu:', response.status);
+      
       // Yanıtın içeriğini text olarak al
       const responseText = await response.text();
+      console.log('API yanıt metni:', responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
       
       // Yanıtın JSON formatında olup olmadığını kontrol et
       let data;
       try {
         data = JSON.parse(responseText);
+        console.log('JSON yanıtı başarıyla ayrıştırıldı');
       } catch (jsonError) {
-        console.error('API yanıtı JSON formatında değil:', responseText);
+        console.error('API yanıtı JSON formatında değil:', responseText.substring(0, 150));
         throw new Error('Sunucu yanıtı geçersiz format içeriyor. Lütfen daha sonra tekrar deneyin.');
       }
 
       if (!response.ok) {
+        console.error('API hatası:', data.error);
         throw new Error(data.error || 'Giriş başarısız');
       }
 
+      console.log('Giriş başarılı, kullanıcı bilgileri alındı');
+      
       // Context'e kullanıcı bilgisini kaydet
       login(data.user);
       

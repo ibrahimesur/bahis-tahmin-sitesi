@@ -1,5 +1,5 @@
 [build]
-  command = "npx prisma generate --schema=./prisma/schema.prisma && npm run build"
+  command = "npm run build"
   publish = "out"
 
 [build.environment]
@@ -7,10 +7,13 @@
   NODE_VERSION = "18"
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
 
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [functions]
   node_bundler = "esbuild"
-  included_files = ["prisma/**/*", "node_modules/.prisma/**/*", "node_modules/@prisma/client/**/*"]
-  
+  included_files = ["prisma/**"]
+
 [build.processing.css]
   bundle = true
   minify = true
@@ -24,15 +27,14 @@
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
 
 [create]
-  publish_dir = ".next"
+  publish_dir = "out"
   content_dir = "content"
   base_dir = "."
   dev_command = "npm run dev"
   build_command = "npm run build"
-  
+
 [create.environment]
   NODE_VERSION = "18"
-  NEXT_USE_NETLIFY_EDGE = "true" 
+  NEXT_USE_NETLIFY_EDGE = "true"
