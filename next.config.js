@@ -7,7 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
-  // output: 'export', // API rotalarının çalışması için statik dışa aktarma modunu kaldırıyoruz
+  output: 'export', // Statik site dışa aktarma modu
 }
 
 module.exports = nextConfig
