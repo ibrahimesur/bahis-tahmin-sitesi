@@ -1,11 +1,11 @@
 [build]
   command = "npm run build"
-  publish = "out"
+  publish = ".next"
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -22,14 +22,21 @@
   bundle = true
   minify = true
 
-# Statik site için basit yönlendirme
+# API rotaları için yönlendirme
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Diğer rotalar için yönlendirme
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+  force = false
 
 [create]
-  publish_dir = "out"
+  publish_dir = ".next"
   content_dir = "content"
   base_dir = "."
   dev_command = "npm run dev"
