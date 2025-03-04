@@ -1,18 +1,19 @@
 [build]
   command = "npm run build"
-  publish = "out"
+  publish = ".next"
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
-  NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
+  NEXT_TELEMETRY_DISABLED = "1"
+  NEXT_USE_NETLIFY_EDGE = "true"
 
-# [[plugins]]
-#   package = "@netlify/plugin-nextjs"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
-# [functions]
-#   node_bundler = "esbuild"
-#   included_files = ["prisma/**"]
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["prisma/**"]
 
 [build.processing.css]
   bundle = true
@@ -22,10 +23,10 @@
   bundle = true
   minify = true
 
-# Tüm istekleri index.html'e yönlendir
+# Tüm istekleri Next.js serverless fonksiyonuna yönlendir
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/server"
   status = 200
 
 [create]
