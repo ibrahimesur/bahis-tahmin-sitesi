@@ -15,18 +15,35 @@ export default async function handler(
   }
 
   try {
+    // Varsayılan istatistik değerleri için yardımcı fonksiyon
+    const getDefaultStats = () => ({
+      shots: { home: 0, away: 0 },
+      shotsOnTarget: { home: 0, away: 0 },
+      possession: { home: 50, away: 50 },
+      corners: { home: 0, away: 0 },
+      fouls: { home: 0, away: 0 },
+      yellowCards: { home: 0, away: 0 },
+      redCards: { home: 0, away: 0 }
+    });
+
     // Maç detayları
     const matchResponse = await fetch(`${API_URL}/matches/${id}`, {
       headers: { 'X-Auth-Token': API_KEY }
+    }).catch(error => {
+      console.error('Maç detayları API hatası:', error);
+      throw new Error('Maç detayları alınamadı');
     });
 
     if (!matchResponse.ok) {
-      const errorData = await matchResponse.json();
+      const errorData = await matchResponse.json().catch(() => ({}));
+      console.error('Maç detayları API yanıt hatası:', errorData);
       throw new Error(errorData.message || 'Maç detayları alınamadı');
     }
 
-    const matchData = await matchResponse.json();
-    console.log('Ham maç verisi:', matchData); // Debug için
+    const matchData = await matchResponse.json().catch(error => {
+      console.error('Maç detayları JSON parse hatası:', error);
+      throw new Error('Maç detayları işlenemedi');
+    });
 
     // Takım kadrolarını döndüren yardımcı fonksiyon
     const getTeamSquad = (teamName: string, formation: string) => {
@@ -154,14 +171,23 @@ export default async function handler(
     // Maç istatistikleri için ayrı istek
     const statsResponse = await fetch(`${API_URL}/matches/${id}/statistics`, {
       headers: { 'X-Auth-Token': API_KEY }
+    }).catch(error => {
+      console.error('İstatistik API hatası:', error);
+      return null;
     });
 
     let stats;
-    if (statsResponse.ok) {
-      const statsData = await statsResponse.json();
-      console.log('Ham istatistik verisi:', JSON.stringify(statsData, null, 2));
-
+    if (statsResponse?.ok) {
       try {
+        const statsData = await statsResponse.json().catch(error => {
+          console.error('İstatistik JSON parse hatası:', error);
+          return null;
+        });
+
+        if (!statsData) {
+          throw new Error('İstatistik verisi işlenemedi');
+        }
+
         // API yanıtını kontrol et
         if (!statsData.statistics || !Array.isArray(statsData.statistics)) {
           console.log('Geçersiz istatistik verisi formatı:', statsData);
@@ -177,30 +203,33 @@ export default async function handler(
           throw new Error('Takım istatistikleri bulunamadı');
         }
 
-        console.log('Ev sahibi istatistikleri:', homeStats);
-        console.log('Deplasman istatistikleri:', awayStats);
-
         // Yardımcı fonksiyon - istatistik değerini bul ve temizle
         const cleanStatValue = (value: string | number) => {
           if (typeof value === 'number') return value;
+          if (typeof value !== 'string') return 0;
           // Yüzde işaretini kaldır ve sayıya çevir
           return parseInt(value.replace('%', '')) || 0;
         };
 
         const findStatValue = (stats: any, type: string) => {
-          if (!stats || !stats.statistics) {
-            console.log(`${type} için istatistik bulunamadı:`, stats);
+          try {
+            if (!stats || !stats.statistics) {
+              console.log(`${type} için istatistik bulunamadı:`, stats);
+              return 0;
+            }
+            const stat = stats.statistics.find((s: any) => s.type === type);
+            if (!stat) {
+              console.log(`${type} için değer bulunamadı:`, stats.statistics);
+              return 0;
+            }
+            
+            const value = cleanStatValue(stat.value);
+            console.log(`${type} değeri:`, value);
+            return value;
+          } catch (error) {
+            console.error(`${type} değeri işlenirken hata:`, error);
             return 0;
           }
-          const stat = stats.statistics.find((s: any) => s.type === type);
-          if (!stat) {
-            console.log(`${type} için değer bulunamadı:`, stats.statistics);
-            return 0;
-          }
-          
-          const value = cleanStatValue(stat.value);
-          console.log(`${type} değeri:`, value);
-          return value;
         };
 
         stats = {
@@ -244,30 +273,12 @@ export default async function handler(
         console.log('İşlenmiş istatistikler:', stats);
       } catch (error) {
         console.error('İstatistik işleme hatası:', error);
-        // Hata durumunda varsayılan değerler
-        stats = {
-          shots: { home: 0, away: 0 },
-          shotsOnTarget: { home: 0, away: 0 },
-          possession: { home: 50, away: 50 },
-          corners: { home: 0, away: 0 },
-          fouls: { home: 0, away: 0 },
-          yellowCards: { home: 0, away: 0 },
-          redCards: { home: 0, away: 0 }
-        };
+        stats = getDefaultStats();
       }
     } else {
-      const errorText = await statsResponse.text();
+      const errorText = await statsResponse?.text().catch(() => 'Bilinmeyen hata');
       console.error('İstatistik API yanıtı başarısız:', errorText);
-      // API'den veri alınamazsa varsayılan değerler
-      stats = {
-        shots: { home: 0, away: 0 },
-        shotsOnTarget: { home: 0, away: 0 },
-        possession: { home: 50, away: 50 },
-        corners: { home: 0, away: 0 },
-        fouls: { home: 0, away: 0 },
-        yellowCards: { home: 0, away: 0 },
-        redCards: { home: 0, away: 0 }
-      };
+      stats = getDefaultStats();
     }
 
     // Debug için istatistikleri logla
