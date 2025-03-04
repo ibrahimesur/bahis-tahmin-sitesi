@@ -1,9 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['crests.football-data.org', 'media.api-sports.io'], // Football Data API'den gelen logoları kullanabilmek için
-  },
   reactStrictMode: true,
+  swcMinify: true,
+  images: {
+    domains: ['via.placeholder.com', 'images.unsplash.com'],
+    unoptimized: true,
+  },
+  trailingSlash: true,
+  output: 'export',
 }
 
 module.exports = nextConfig 
