@@ -287,10 +287,30 @@ export default async function handler(
     }
 
     // Debug için istatistikleri logla
-    console.log('Maç istatistikleri:', {
-      rawStats: matchData.statistics,
-      processedStats: stats
+    console.log('Maç detayları:', {
+      id,
+      homeTeam: matchData.homeTeam.name,
+      awayTeam: matchData.awayTeam.name,
+      status: matchData.status,
+      score: matchData.score,
+      venue: matchData.venue,
+      competition: matchData.competition.name
     });
+
+    console.log('İstatistik verileri:', {
+      rawStats: matchData.statistics,
+      processedStats: stats,
+      homeTeamStats: statsResponse?.ok ? await statsResponse.json().catch(() => null) : null
+    });
+
+    // Hata durumlarını logla
+    if (!statsResponse?.ok) {
+      console.error('İstatistik API yanıtı başarısız:', {
+        status: statsResponse?.status,
+        statusText: statsResponse?.statusText,
+        error: await statsResponse?.text().catch(() => 'Bilinmeyen hata')
+      });
+    }
 
     // H2H için örnek veri (API'den gelmiyorsa)
     const h2h = Array(5).fill(null).map((_, i) => ({
@@ -335,7 +355,8 @@ export default async function handler(
       return 0;
     };
 
-    const matchDetail: MatchDetail = {
+    // API yanıtını hazırla
+    const response: MatchDetail = {
       id: matchData.id.toString(),
       homeTeam: {
         name: matchData.homeTeam.name,
@@ -349,7 +370,7 @@ export default async function handler(
         redCards: matchData.score.redCards?.away || 0,
         logo: matchData.awayTeam.crest
       },
-      minute: calculateMinute(matchData), // Dakika hesaplama fonksiyonunu kullan
+      minute: calculateMinute(matchData),
       league: matchData.competition.name,
       status: matchData.status === 'FINISHED' ? 'finished' :
               (matchData.status === 'IN_PLAY' || matchData.status === 'PAUSED') ? 'live' : 'not_started',
@@ -369,15 +390,13 @@ export default async function handler(
       h2h
     };
 
-    // Debug için
-    console.log('Maç durumu:', {
-      status: matchData.status,
-      calculatedMinute: matchDetail.minute,
-      originalMinute: matchData.minute,
-      utcDate: matchData.utcDate
+    // Yanıtı logla
+    console.log('API yanıtı:', {
+      status: 'success',
+      data: response
     });
 
-    res.status(200).json(matchDetail);
+    res.status(200).json(response);
   } catch (error) {
     console.error('API Hatası:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Maç detayları alınamadı' });
