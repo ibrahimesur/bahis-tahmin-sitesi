@@ -6,6 +6,7 @@ module.exports = {
     {
       name: "git",
       type: "git",
+      rootPath: "content",
       models: [
         {
           type: "page",
@@ -49,5 +50,21 @@ module.exports = {
         }
       ]
     }
-  ]
+  ],
+  pageLayoutComponent: "PageLayout",
+  pageComponents: {
+    page: {
+      component: "PageLayout",
+      fields: ["title", "content"]
+    }
+  },
+  components: {
+    PageLayout: {
+      fields: ["title", "content"]
+    }
+  },
+  siteConfig: {
+    title: "Bahis Tahmin Sitesi",
+    description: "Profesyonel bahis tahminleri ve analizleri"
+  }
 }; 

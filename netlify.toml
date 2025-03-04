@@ -34,4 +34,8 @@
   content_dir = "content"
   base_dir = "."
   dev_command = "npm run dev"
-  build_command = "npm run build" 
+  build_command = "npm run build"
+  
+[create.environment]
+  NODE_VERSION = "18"
+  NEXT_USE_NETLIFY_EDGE = "true" 
