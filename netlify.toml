@@ -1,27 +1,18 @@
 [build]
   command = "npm run build"
-  publish = "out"
+  publish = ".next"
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
 
-# Statik site için basit yönlendirme
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
-# Next.js eklentisini kaldırıyoruz çünkü statik site için gerekli değil
-# [[plugins]]
-#   package = "@netlify/plugin-nextjs"
-
-# Functions bölümünü kaldırıyoruz çünkü statik site için gerekli değil
-# [functions]
-#   node_bundler = "esbuild"
-#   included_files = ["prisma/**"]
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["prisma/**"]
 
 [build.processing.css]
   bundle = true
@@ -31,8 +22,14 @@
   bundle = true
   minify = true
 
+# Tüm istekleri Next.js uygulamasına yönlendir
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/next"
+  status = 200
+
 [create]
-  publish_dir = "out"
+  publish_dir = ".next"
   content_dir = "content"
   base_dir = "."
   dev_command = "npm run dev"
