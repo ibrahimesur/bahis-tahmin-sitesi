@@ -37,8 +37,8 @@ const Footer: React.FC = () => {
             <p className="text-gray-300">
               Sorularınız için bize ulaşın:
               <br />
-              <a href="mailto:info@bahistahmin.com" className="hover:text-white">
-                info@bahistahmin.com
+              <a href="mailto:info@bankolab.com" className="hover:text-white">
+                info@bankolab.com
               </a>
             </p>
           </div>
