@@ -32,11 +32,12 @@ export default function Navbar({ children }: NavbarProps) {
               <Image 
                 src="/images/logo.png" 
                 alt="BankoLab Logo" 
-                width={120} 
-                height={120} 
+                width={100} 
+                height={100} 
                 className="w-auto h-auto"
                 priority={true}
-                quality={90}
+                quality={80}
+                sizes="(max-width: 768px) 80px, 100px"
               />
             </Link>
           </div>
