@@ -1,24 +1,7 @@
 import { LiveScore } from '../types';
 
-const API_KEY = process.env.NEXT_PUBLIC_FOOTBALL_DATA_API_KEY;
+const API_KEY = process.env.FOOTBALL_DATA_API_KEY;
 const API_URL = 'https://api.football-data.org/v4';
-
-export async function fetchLiveMatches(): Promise<LiveScore[]> {
-  try {
-    const response = await fetch('/api/matches');
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'API yanıt vermedi');
-    }
-
-    const matches = await response.json();
-    return matches;
-  } catch (error) {
-    console.error('Detaylı hata:', error);
-    throw error;
-  }
-}
 
 // Test verileri hata durumu için
 const mockMatches: LiveScore[] = [
@@ -47,6 +30,25 @@ const mockMatches: LiveScore[] = [
     ],
   },
 ];
+
+export async function fetchLiveMatches(): Promise<LiveScore[]> {
+  try {
+    const response = await fetch('/api/matches');
+
+    if (!response.ok) {
+      console.error('API yanıt hatası:', response.status, response.statusText);
+      console.log('Test verileri kullanılıyor...');
+      return mockMatches; // API yanıt vermediğinde test verilerini kullan
+    }
+
+    const matches = await response.json();
+    return matches;
+  } catch (error) {
+    console.error('Detaylı hata:', error);
+    console.log('Hata nedeniyle test verileri kullanılıyor...');
+    return mockMatches; // Hata durumunda test verilerini kullan
+  }
+}
 
 // Gerçek API bağlantısı için bu fonksiyonu kullanabilirsiniz
 /*
