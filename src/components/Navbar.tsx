@@ -18,24 +18,27 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <Image 
-                  src="/images/logo.png" 
-                  alt="BankoLab Logo" 
-                  width={40} 
-                  height={40} 
-                  className="h-10 w-auto"
-                />
-                <span className="text-xl font-bold text-gray-900">BankoLab</span>
-              </Link>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="flex flex-col md:flex-row justify-between">
+          {/* Logo ve Site Adı - Büyütülmüş ve Sütun Şeklinde */}
+          <div className="flex flex-col items-center md:items-start mb-4 md:mb-0">
+            <Link href="/" className="flex flex-col items-center md:items-start">
+              <Image 
+                src="/images/logo.png" 
+                alt="BankoLab Logo" 
+                width={100} 
+                height={100} 
+                className="h-20 w-auto mb-2"
+                priority={true}
+                quality={90}
+              />
+              <span className="text-2xl font-bold text-gray-900">BankoLab</span>
+            </Link>
+          </div>
 
+          <div className="flex flex-col md:flex-row justify-between w-full md:w-auto">
             {/* Desktop Navigation */}
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="hidden md:flex md:space-x-8 items-center">
               {navigation.map((item) => (
                 <Link
                   key={item.name}
@@ -50,40 +53,40 @@ export default function Navbar() {
                 </Link>
               ))}
             </div>
-          </div>
 
-          {/* Right side buttons */}
-          <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
-            {user ? (
-              <>
-                <span className="text-gray-700">{user.username}</span>
-                <button
-                  onClick={logout}
-                  className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Çıkış Yap
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Giriş Yap
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium shadow-sm"
-                >
-                  Kayıt Ol
-                </Link>
-              </>
-            )}
+            {/* Right side buttons */}
+            <div className="hidden md:flex md:items-center md:space-x-4 md:ml-6">
+              {user ? (
+                <>
+                  <span className="text-gray-700">{user.username}</span>
+                  <button
+                    onClick={logout}
+                    className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Çıkış Yap
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Giriş Yap
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium shadow-sm"
+                  >
+                    Kayıt Ol
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center sm:hidden">
+          <div className="absolute top-4 right-4 md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
@@ -111,7 +114,7 @@ export default function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
+      <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden`}>
         <div className="pt-2 pb-3 space-y-1">
           {navigation.map((item) => (
             <Link
