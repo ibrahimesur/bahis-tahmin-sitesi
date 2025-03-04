@@ -1,11 +1,13 @@
 [build]
   command = "npx prisma generate && npm run build"
-  publish = "out"
+  publish = ".next"
 
 [build.environment]
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [functions]
   node_bundler = "esbuild"
