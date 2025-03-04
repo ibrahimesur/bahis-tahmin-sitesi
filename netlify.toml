@@ -1,5 +1,5 @@
 [build]
-  command = "npx prisma generate && npm run build"
+  command = "npx prisma generate --schema=./prisma/schema.prisma && npm run build"
   publish = ".next"
 
 [build.environment]
