@@ -22,18 +22,11 @@
   bundle = true
   minify = true
 
-# API rotaları için yönlendirme
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
-# Diğer rotalar için yönlendirme
+# Tüm istekleri Next.js uygulamasına yönlendir
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/next"
   status = 200
-  force = false
 
 [create]
   publish_dir = ".next"
