@@ -25,37 +25,7 @@ export default async function handler(
   
   if (!API_KEY) {
     console.error('API anahtarı bulunamadı');
-    
-    // Test verileri döndür
-    const mockMatches: LiveScore[] = [
-      {
-        id: '1',
-        homeTeam: { name: 'Galatasaray', score: 2, redCards: 0 },
-        awayTeam: { name: 'Fenerbahçe', score: 1, redCards: 1 },
-        minute: 67,
-        league: 'Süper Lig',
-        status: 'live',
-        events: [
-          { id: '1', type: 'goal', minute: 23, team: 'home', playerName: 'Icardi' },
-          { id: '2', type: 'red_card', minute: 45, team: 'away', playerName: 'Dzeko' },
-        ],
-      },
-      {
-        id: '2',
-        homeTeam: { name: 'Barcelona', score: 3, redCards: 0 },
-        awayTeam: { name: 'Real Madrid', score: 2, redCards: 0 },
-        minute: 75,
-        league: 'La Liga',
-        status: 'live',
-        events: [
-          { id: '3', type: 'goal', minute: 15, team: 'home', playerName: 'Lewandowski' },
-          { id: '4', type: 'goal', minute: 34, team: 'away', playerName: 'Vinicius' },
-        ],
-      },
-    ];
-    
-    console.log('API anahtarı eksik olduğu için test verileri döndürülüyor');
-    return res.status(200).json(mockMatches);
+    return res.status(500).json({ error: 'API yapılandırması eksik' });
   }
 
   try {
@@ -94,36 +64,9 @@ export default async function handler(
         data: errorData
       });
       
-      // Test verileri döndür
-      const mockMatches: LiveScore[] = [
-        {
-          id: '1',
-          homeTeam: { name: 'Galatasaray', score: 2, redCards: 0 },
-          awayTeam: { name: 'Fenerbahçe', score: 1, redCards: 1 },
-          minute: 67,
-          league: 'Süper Lig',
-          status: 'live',
-          events: [
-            { id: '1', type: 'goal', minute: 23, team: 'home', playerName: 'Icardi' },
-            { id: '2', type: 'red_card', minute: 45, team: 'away', playerName: 'Dzeko' },
-          ],
-        },
-        {
-          id: '2',
-          homeTeam: { name: 'Barcelona', score: 3, redCards: 0 },
-          awayTeam: { name: 'Real Madrid', score: 2, redCards: 0 },
-          minute: 75,
-          league: 'La Liga',
-          status: 'live',
-          events: [
-            { id: '3', type: 'goal', minute: 15, team: 'home', playerName: 'Lewandowski' },
-            { id: '4', type: 'goal', minute: 34, team: 'away', playerName: 'Vinicius' },
-          ],
-        },
-      ];
-      
-      console.log('API hatası nedeniyle test verileri döndürülüyor');
-      return res.status(200).json(mockMatches);
+      return res.status(response.status).json({ 
+        error: `Football API Hatası: ${response.status} - ${errorData.message || response.statusText}` 
+      });
     }
 
     const data = await response.json();
