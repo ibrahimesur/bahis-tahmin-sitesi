@@ -20,39 +20,60 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      console.log('Giriş denemesi başlatılıyor:', formData.email);
+      console.log(`[${new Date().toISOString()}] Giriş denemesi başlatılıyor:`, formData.email);
       
       // API isteği gönder
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify(formData),
       });
 
-      console.log('API yanıtı alındı, durum kodu:', response.status);
+      console.log(`[${new Date().toISOString()}] API yanıtı alındı, durum kodu:`, response.status);
+      console.log(`[${new Date().toISOString()}] Yanıt başlıkları:`, {
+        contentType: response.headers.get('Content-Type'),
+        contentLength: response.headers.get('Content-Length')
+      });
       
       // Yanıtın içeriğini text olarak al
       const responseText = await response.text();
-      console.log('API yanıt metni:', responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
+      console.log(`[${new Date().toISOString()}] API yanıt metni:`, 
+        responseText.substring(0, 150) + (responseText.length > 150 ? '...' : ''));
+      
+      // Yanıt boş mu kontrol et
+      if (!responseText || responseText.trim() === '') {
+        console.error(`[${new Date().toISOString()}] API boş yanıt döndürdü`);
+        throw new Error('Sunucu yanıtı boş. Lütfen daha sonra tekrar deneyin.');
+      }
       
       // Yanıtın JSON formatında olup olmadığını kontrol et
       let data;
       try {
         data = JSON.parse(responseText);
-        console.log('JSON yanıtı başarıyla ayrıştırıldı');
+        console.log(`[${new Date().toISOString()}] JSON yanıtı başarıyla ayrıştırıldı:`, 
+          JSON.stringify(data).substring(0, 100));
       } catch (jsonError) {
-        console.error('API yanıtı JSON formatında değil:', responseText.substring(0, 150));
+        console.error(`[${new Date().toISOString()}] API yanıtı JSON formatında değil:`, 
+          responseText.substring(0, 150));
+        console.error(`[${new Date().toISOString()}] JSON ayrıştırma hatası:`, jsonError);
         throw new Error('Sunucu yanıtı geçersiz format içeriyor. Lütfen daha sonra tekrar deneyin.');
       }
 
       if (!response.ok) {
-        console.error('API hatası:', data.error);
+        console.error(`[${new Date().toISOString()}] API hatası:`, data.error);
         throw new Error(data.error || 'Giriş başarısız');
       }
 
-      console.log('Giriş başarılı, kullanıcı bilgileri alındı');
+      // Kullanıcı verisi kontrolü
+      if (!data.user) {
+        console.error(`[${new Date().toISOString()}] API yanıtında kullanıcı verisi yok:`, data);
+        throw new Error('Kullanıcı bilgileri alınamadı');
+      }
+
+      console.log(`[${new Date().toISOString()}] Giriş başarılı, kullanıcı bilgileri alındı`);
       
       // Context'e kullanıcı bilgisini kaydet
       login(data.user);
@@ -60,7 +81,7 @@ export default function LoginPage() {
       // Ana sayfaya yönlendir
       router.push('/');
     } catch (err) {
-      console.error('Giriş hatası:', err);
+      console.error(`[${new Date().toISOString()}] Giriş hatası:`, err);
       setError(err instanceof Error ? err.message : 'Bir hata oluştu');
     } finally {
       setIsLoading(false);
