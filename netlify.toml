@@ -14,12 +14,14 @@
   status = 200
   force = false
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Next.js eklentisini kaldırıyoruz çünkü statik site için gerekli değil
+# [[plugins]]
+#   package = "@netlify/plugin-nextjs"
 
-[functions]
-  node_bundler = "esbuild"
-  included_files = ["prisma/**"]
+# Functions bölümünü kaldırıyoruz çünkü statik site için gerekli değil
+# [functions]
+#   node_bundler = "esbuild"
+#   included_files = ["prisma/**"]
 
 [build.processing.css]
   bundle = true
@@ -30,7 +32,7 @@
   minify = true
 
 [create]
-  publish_dir = ".next"
+  publish_dir = "out"
   content_dir = "content"
   base_dir = "."
   dev_command = "npm run dev"
