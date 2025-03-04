@@ -87,6 +87,7 @@ export interface LiveScore {
   league: string;
   status: 'live' | 'finished' | 'not_started';
   events: MatchEvent[];
+  date?: string;
 }
 
 export interface MatchEvent {
