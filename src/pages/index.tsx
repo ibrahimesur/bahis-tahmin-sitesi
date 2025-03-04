@@ -212,7 +212,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
             {/* Günün Önemli Maçları */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col h-[600px] transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:z-10">
               <div className="flex items-center space-x-2 mb-4">
                 <FaFutbol className="text-blue-600 text-xl" />
                 <h2 className="text-xl font-bold text-gray-800">Günün Önemli Maçları</h2>
@@ -223,7 +223,7 @@ export default function HomePage() {
                   <p>Yükleniyor...</p>
                 </div>
               ) : (
-                <div className="space-y-3 flex-grow">
+                <div className="space-y-3 flex-grow overflow-y-auto pr-2">
                   {matches.map((match) => (
                     <Link href={`/matches/${match.id}`} key={match.id}>
                       <div className="border border-gray-200 rounded-lg p-3 hover:bg-blue-50 transition cursor-pointer">
@@ -282,7 +282,7 @@ export default function HomePage() {
             </div>
             
             {/* Editörlerin Profilleri */}
-            <div className="col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+            <div className="col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col h-[600px] transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:z-10">
               <div className="flex items-center space-x-2 mb-4">
                 <FaUsers className="text-green-600 text-xl" />
                 <h2 className="text-xl font-bold text-gray-800">Editörlerimiz</h2>
@@ -293,7 +293,7 @@ export default function HomePage() {
                   <p>Yükleniyor...</p>
                 </div>
               ) : (
-                <div className="space-y-4 flex-grow">
+                <div className="space-y-4 flex-grow overflow-y-auto pr-2">
                   {editors.map((editor) => (
                     <Link href={`/editors/${editor.id}`} key={editor.id}>
                       <div className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer">
@@ -332,7 +332,7 @@ export default function HomePage() {
             </div>
             
             {/* Tahmin Bölümü */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+            <div className="col-span-1 md:col-span-1 lg:col-span-2 bg-white rounded-lg shadow-md p-4 flex flex-col h-[600px] transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:z-10">
               <div className="flex items-center space-x-2 mb-4">
                 <FaChartLine className="text-purple-600 text-xl" />
                 <h2 className="text-xl font-bold text-gray-800">Günün Tahminleri</h2>
@@ -343,7 +343,7 @@ export default function HomePage() {
                   <p>Yükleniyor...</p>
                 </div>
               ) : (
-                <div className="space-y-4 flex-grow">
+                <div className="space-y-4 flex-grow overflow-y-auto pr-2">
                   {predictions.map((prediction) => (
                     <div key={prediction.id} className="border border-gray-200 rounded-lg p-3 hover:bg-blue-50 transition">
                       <div className="flex items-center justify-between mb-2">
@@ -421,7 +421,7 @@ export default function HomePage() {
             </div>
             
             {/* Günün Kuponu */}
-            <div className="col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col h-full">
+            <div className="col-span-1 bg-white rounded-lg shadow-md p-4 flex flex-col h-[600px] transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:z-10">
               <div className="flex items-center space-x-2 mb-4">
                 <FaTicketAlt className="text-orange-600 text-xl" />
                 <h2 className="text-xl font-bold text-gray-800">Günün Kuponu</h2>
@@ -433,7 +433,7 @@ export default function HomePage() {
                 </div>
               ) : coupon ? (
                 <div className="flex flex-col h-full">
-                  <div className="space-y-3 mb-4 flex-grow">
+                  <div className="space-y-3 mb-4 flex-grow overflow-y-auto pr-2">
                     {coupon.matches.map((item, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
