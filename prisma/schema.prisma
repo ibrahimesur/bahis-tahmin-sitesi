@@ -87,14 +87,14 @@ model Follows {
 }
 
 model Comment {
-  id           String      @id @default(cuid())
-  content      String
-  articleId    String
+  id          String      @id @default(cuid())
+  content     String
+  authorId    String
+  articleId   String?
   predictionId String?
-  authorId     String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  article      Article     @relation(fields: [articleId], references: [id])
-  author       User        @relation(fields: [authorId], references: [id])
-  prediction   Prediction? @relation(fields: [predictionId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  author      User        @relation(fields: [authorId], references: [id])
+  article     Article?    @relation(fields: [articleId], references: [id])
+  prediction  Prediction? @relation(fields: [predictionId], references: [id])
 }
