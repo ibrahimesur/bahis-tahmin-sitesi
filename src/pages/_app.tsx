@@ -11,7 +11,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       <Head>
         <title>BankoLab - Bahis Tahmin Sitesi</title>
         <meta name="description" content="Futbol bahis tahminleri, canlı skorlar ve puan durumları" />
-        <link rel="icon" href="/favicon.ico" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#1e40af" />
+        <link rel="icon" href="/images/logo2.jpg" />
       </Head>
       
       <Navbar>

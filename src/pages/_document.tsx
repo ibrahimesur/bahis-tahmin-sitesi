@@ -4,6 +4,10 @@ export default function Document() {
   return (
     <Html lang="tr">
       <Head>
+        {/* Favicon */}
+        <link rel="icon" href="/images/logo2.jpg" />
+        <link rel="apple-touch-icon" href="/images/logo2.jpg" />
+        
         {/* Preconnect to third-party domains */}
         <link rel="preconnect" href="https://crests.football-data.org" />
         <link rel="dns-prefetch" href="https://crests.football-data.org" />
