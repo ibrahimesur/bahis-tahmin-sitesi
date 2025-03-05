@@ -15,6 +15,7 @@ if (!databaseUrl) {
 const prismaClientSingleton = () => {
   console.log('Prisma istemcisi oluşturuluyor...');
   console.log('DATABASE_URL tanımlı mı:', !!databaseUrl);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
   
   try {
     const prismaClient = new PrismaClient({
@@ -23,7 +24,7 @@ const prismaClientSingleton = () => {
           url: databaseUrl
         }
       },
-      log: ['query', 'error', 'warn'],
+      log: ['error', 'warn'],
     });
     
     console.log('Prisma istemcisi başarıyla oluşturuldu');
@@ -31,7 +32,16 @@ const prismaClientSingleton = () => {
     // Bağlantıyı test et
     prismaClient.$connect()
       .then(() => console.log('Veritabanına bağlantı başarılı'))
-      .catch(err => console.error('Veritabanı bağlantı hatası:', err));
+      .catch(err => {
+        console.error('Veritabanı bağlantı hatası:', err);
+        // Bağlantı hatası durumunda yeniden deneme mekanizması
+        console.log('Bağlantı yeniden deneniyor...');
+        setTimeout(() => {
+          prismaClient.$connect()
+            .then(() => console.log('Veritabanına bağlantı başarılı (yeniden deneme)'))
+            .catch(retryErr => console.error('Veritabanı bağlantı hatası (yeniden deneme):', retryErr));
+        }, 2000);
+      });
       
     return prismaClient;
   } catch (error) {
