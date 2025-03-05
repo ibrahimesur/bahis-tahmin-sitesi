@@ -23,6 +23,13 @@ const nextConfig = {
   },
   trailingSlash: true,
   // output: 'export', // Statik site dışa aktarma modu (API'ler için kapatıldı)
+  
+  // Netlify özel ayarları
+  distDir: '.next',
+  generateBuildId: async () => {
+    return 'build-' + new Date().getTime();
+  },
+  
   // Performans optimizasyonları
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',

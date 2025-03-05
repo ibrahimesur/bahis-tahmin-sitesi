@@ -28,17 +28,18 @@
   bundle = true
   minify = true
 
-# API isteklerini functions'a, diğer istekleri index.html'e yönlendir
+# Tüm istekleri Next.js tarafından yönetilen rotalarına yönlendir
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
   force = true
-
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/builders/:splat"
-  status = 200
 
 [create]
   publish_dir = "out"
