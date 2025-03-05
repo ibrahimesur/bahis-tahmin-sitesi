@@ -20,7 +20,8 @@ const getToken = () => {
 const getHeaders = (includeAuth = true) => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'Access-Control-Allow-Origin': '*'
   };
 
   if (includeAuth) {
