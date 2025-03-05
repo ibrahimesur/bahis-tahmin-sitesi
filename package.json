@@ -17,6 +17,7 @@
     "bcryptjs": "^3.0.2",
     "critters": "^0.0.25",
     "gray-matter": "^4.0.3",
+    "jsonwebtoken": "^9.0.2",
     "marked": "^15.0.7",
     "next": "^14.1.0",
     "next-auth": "^4.24.11",
@@ -31,8 +32,10 @@
     "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "@netlify/functions": "^3.0.1",
     "@netlify/plugin-nextjs": "^5.9.4",
     "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/pg": "^8.11.11"
   }
 }
