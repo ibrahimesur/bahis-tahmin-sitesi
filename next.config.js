@@ -22,7 +22,7 @@ const nextConfig = {
     formats: ['image/webp'],
   },
   trailingSlash: true,
-  // output: 'export', // Statik site dışa aktarma modu (API'ler için kapatıldı)
+  output: 'export', // Statik site dışa aktarma modu
   
   // Netlify özel ayarları
   distDir: '.next',
