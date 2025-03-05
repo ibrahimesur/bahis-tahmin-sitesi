@@ -22,7 +22,7 @@ const nextConfig = {
     formats: ['image/webp'],
   },
   trailingSlash: true,
-  output: 'export', // Statik site dışa aktarma modu
+  // output: 'export', // Statik site dışa aktarma modu (API'ler için kapatıldı)
   // Performans optimizasyonları
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
