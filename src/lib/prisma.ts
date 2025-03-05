@@ -16,14 +16,28 @@ const prismaClientSingleton = () => {
   console.log('Prisma istemcisi oluşturuluyor...');
   console.log('DATABASE_URL tanımlı mı:', !!databaseUrl);
   
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl
-      }
-    },
-    log: ['query', 'error', 'warn'],
-  });
+  try {
+    const prismaClient = new PrismaClient({
+      datasources: {
+        db: {
+          url: databaseUrl
+        }
+      },
+      log: ['query', 'error', 'warn'],
+    });
+    
+    console.log('Prisma istemcisi başarıyla oluşturuldu');
+    
+    // Bağlantıyı test et
+    prismaClient.$connect()
+      .then(() => console.log('Veritabanına bağlantı başarılı'))
+      .catch(err => console.error('Veritabanı bağlantı hatası:', err));
+      
+    return prismaClient;
+  } catch (error) {
+    console.error('Prisma istemcisi oluşturulurken hata:', error);
+    throw error;
+  }
 };
 
 // Geliştirme ortamında global nesne üzerinde sakla
