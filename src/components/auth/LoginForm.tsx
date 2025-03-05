@@ -11,6 +11,7 @@ const LoginForm = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -23,15 +24,37 @@ const LoginForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setDebugInfo(null);
     setLoading(true);
 
     try {
-      await login(formData);
+      console.log('Giriş denemesi:', { email: formData.email });
+      const result = await login(formData);
+      console.log('Giriş başarılı:', result);
       
       // Başarılı giriş sonrası ana sayfaya yönlendir
       router.push('/');
     } catch (error: any) {
-      setError(error.message || 'Giriş yapılırken bir hata oluştu');
+      console.error('Giriş hatası:', error);
+      
+      // Daha detaylı hata bilgisi
+      let errorMessage = 'Giriş yapılırken bir hata oluştu';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Ek hata bilgilerini debug kısmında göster
+        setDebugInfo(JSON.stringify({
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          url: window.location.href,
+          apiBaseUrl: typeof window !== 'undefined' && window.location.hostname === 'localhost'
+            ? 'http://localhost:8888/.netlify/functions'
+            : '/.netlify/functions'
+        }, null, 2));
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -96,6 +119,13 @@ const LoginForm = () => {
             Hesap Oluştur
           </Link>
         </div>
+        
+        {debugInfo && (
+          <div className="mt-8 p-4 bg-gray-100 rounded-lg text-xs overflow-auto max-h-64">
+            <h3 className="font-bold mb-2">Hata Detayları (Geliştirici İçin):</h3>
+            <pre>{debugInfo}</pre>
+          </div>
+        )}
       </form>
     </div>
   );

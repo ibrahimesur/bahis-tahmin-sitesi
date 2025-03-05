@@ -15,8 +15,9 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["node_modules/.prisma/**"]
+  included_files = ["node_modules/.prisma/client/**", "prisma/**"]
   external_node_modules = ["@prisma/client", "@prisma/engines"]
+  directory = "netlify/functions"
 
 [build.processing.css]
   bundle = true
@@ -31,6 +32,7 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*"

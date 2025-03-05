@@ -4,7 +4,7 @@
 // Geliştirme ortamında: http://localhost:8888/.netlify/functions
 // Üretim ortamında: /.netlify/functions
 const API_BASE_URL = 
-  process.env.NODE_ENV === 'development' 
+  typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:8888/.netlify/functions'
     : '/.netlify/functions';
 
@@ -20,6 +20,7 @@ const getToken = () => {
 const getHeaders = (includeAuth = true) => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   };
 
   if (includeAuth) {
@@ -41,30 +42,55 @@ const apiRequest = async (
 ) => {
   const url = `${API_BASE_URL}/${endpoint}`;
   
+  console.log(`API isteği: ${method} ${url}`);
+  
   const options: RequestInit = {
     method,
     headers: getHeaders(includeAuth),
+    credentials: 'same-origin',
+    mode: 'cors'
   };
 
   if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
     options.body = JSON.stringify(data);
+    console.log('Gönderilen veri:', data);
   }
 
   try {
+    console.log('Fetch isteği başlatılıyor:', { url, options: { ...options, headers: { ...options.headers } } });
     const response = await fetch(url, options);
+    console.log('Fetch yanıtı alındı:', { status: response.status, statusText: response.statusText });
+    
+    // Yanıt durumunu kontrol et
+    if (!response.ok) {
+      // Yanıt JSON değilse hata mesajını almaya çalış
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        console.error('API hatası (JSON):', errorData);
+        throw new Error(errorData.message || `Sunucu hatası: ${response.status}`);
+      } else {
+        const errorText = await response.text();
+        console.error('API hatası (Text):', errorText);
+        throw new Error(`Sunucu hatası (${response.status}): ${errorText || response.statusText}`);
+      }
+    }
     
     // JSON yanıtı ayrıştır
     const result = await response.json();
-    
-    // Başarısız yanıt için hata fırlat
-    if (!response.ok) {
-      throw new Error(result.message || 'Bilinmeyen hata oluştu');
-    }
+    console.log('API yanıtı:', result);
     
     return result;
   } catch (error) {
     // Hata yönetimi
     console.error('API isteği hatası:', error);
+    
+    // Ağ hatalarını daha açıklayıcı hale getir
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin. Hata: ${error.message}`);
+    }
+    
     throw error;
   }
 };

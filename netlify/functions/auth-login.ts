@@ -4,15 +4,19 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const handler: Handler = async (event, context) => {
-  // CORS için header ayarları
+  console.log('auth-login function called');
+  
+  // CORS için header ayarları - tüm domainlere izin ver
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
   };
 
   // OPTIONS isteği için CORS yanıtı
   if (event.httpMethod === 'OPTIONS') {
+    console.log('OPTIONS isteği işleniyor');
     return {
       statusCode: 200,
       headers,
@@ -22,6 +26,7 @@ const handler: Handler = async (event, context) => {
 
   // Sadece POST isteklerine işlem yap
   if (event.httpMethod !== 'POST') {
+    console.log(`Desteklenmeyen HTTP metodu: ${event.httpMethod}`);
     return {
       statusCode: 405,
       headers,
@@ -31,10 +36,15 @@ const handler: Handler = async (event, context) => {
 
   try {
     // İstek gövdesini ayrıştır
-    const { email, password } = JSON.parse(event.body || '{}');
+    const body = event.body || '{}';
+    console.log('İstek gövdesi:', body);
+    
+    const { email, password } = JSON.parse(body);
+    console.log('Giriş denemesi:', { email: email });
 
     // Gerekli alanları kontrol et
     if (!email || !password) {
+      console.log('Eksik alanlar:', { email: !!email, password: !!password });
       return {
         statusCode: 400,
         headers,
@@ -45,12 +55,28 @@ const handler: Handler = async (event, context) => {
     }
 
     // Kullanıcıyı bul
+    console.log('Kullanıcı aranıyor:', email);
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
-    // Kullanıcı bulunamadıysa veya şifre eşleşmiyorsa
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+      console.log('Kullanıcı bulunamadı:', email);
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ 
+          message: 'Geçersiz e-posta veya şifre' 
+        }),
+      };
+    }
+
+    // Şifre kontrolü
+    console.log('Şifre doğrulanıyor');
+    const passwordValid = await bcrypt.compare(password, user.password);
+    
+    if (!passwordValid) {
+      console.log('Şifre geçersiz');
       return {
         statusCode: 401,
         headers,
@@ -74,6 +100,7 @@ const handler: Handler = async (event, context) => {
     }
 
     // JWT token oluştur
+    console.log('JWT token oluşturuluyor');
     const token = jwt.sign(
       { 
         userId: user.id,
@@ -86,6 +113,7 @@ const handler: Handler = async (event, context) => {
     // Hassas bilgileri silip yanıt döndür
     const { password: _, ...userWithoutPassword } = user;
     
+    console.log('Giriş başarılı:', { userId: user.id });
     return {
       statusCode: 200,
       headers,
@@ -102,7 +130,8 @@ const handler: Handler = async (event, context) => {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
-        message: 'Sunucu hatası, lütfen daha sonra tekrar deneyin' 
+        message: 'Sunucu hatası, lütfen daha sonra tekrar deneyin',
+        error: process.env.NODE_ENV !== 'production' ? String(error) : undefined
       }),
     };
   }
