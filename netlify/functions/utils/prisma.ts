@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 // Global tipini tanımlama
 declare global {
@@ -10,13 +10,19 @@ declare global {
 // mevcut bağlantıyı yeniden kullanabiliriz
 let prisma: PrismaClient;
 
+// Veritabanı bağlantı URL'sini kontrol et
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  console.error('DATABASE_URL çevre değişkeni tanımlanmamış! (Netlify Functions)');
+}
+
 if (process.env.NODE_ENV === 'production') {
   // Production ortamında daha fazla log ve bağlantı yeniden deneme mekanizması ekle
   prisma = new PrismaClient({
-    log: ['error', 'warn'],
+    log: ['error', 'warn'] as Prisma.LogLevel[],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL
+        url: databaseUrl
       }
     }
   });
@@ -28,11 +34,24 @@ if (process.env.NODE_ENV === 'production') {
       console.error('Veritabanı bağlantı hatası (Netlify Functions):', err);
       console.log('DATABASE_URL tanımlı mı:', !!process.env.DATABASE_URL);
       console.log('NODE_ENV:', process.env.NODE_ENV);
+      
+      // Bağlantı hatası durumunda yeniden deneme
+      setTimeout(() => {
+        console.log('Veritabanı bağlantısı yeniden deneniyor...');
+        prisma.$connect()
+          .then(() => console.log('Veritabanına bağlantı başarılı (yeniden deneme)'))
+          .catch(retryErr => console.error('Veritabanı bağlantı hatası (yeniden deneme):', retryErr));
+      }, 2000);
     });
 } else {
   if (!global.prisma) {
     global.prisma = new PrismaClient({
-      log: ['query', 'error', 'warn']
+      log: ['query', 'error', 'warn'] as Prisma.LogLevel[],
+      datasources: {
+        db: {
+          url: databaseUrl
+        }
+      }
     });
   }
   prisma = global.prisma;
