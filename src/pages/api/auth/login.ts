@@ -18,6 +18,9 @@ export default async function handler(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
+  
+  // Content-Type başlığını ayarla
+  res.setHeader('Content-Type', 'application/json');
 
   // OPTIONS isteği için erken yanıt
   if (req.method === 'OPTIONS') {
@@ -31,7 +34,7 @@ export default async function handler(
   try {
     // İstek gövdesini kontrol et
     console.log(`[${new Date().toISOString()}] İstek gövdesi:`, req.body ? JSON.stringify(req.body).substring(0, 100) : 'Boş');
-    
+
     if (!req.body) {
       return res.status(400).json({ error: 'İstek gövdesi boş' });
     }
@@ -59,9 +62,9 @@ export default async function handler(
       console.log(`[${new Date().toISOString()}] Veritabanı bağlantısı başarılı`);
     } catch (dbError) {
       console.error(`[${new Date().toISOString()}] Veritabanı bağlantı hatası:`, dbError);
-      return res.status(500).json({ 
-        error: 'Veritabanı bağlantı hatası', 
-        details: dbError instanceof Error ? dbError.message : 'Bilinmeyen hata' 
+      return res.status(500).json({
+        error: 'Veritabanı bağlantı hatası',
+        details: dbError instanceof Error ? dbError.message : 'Bilinmeyen hata'
       });
     }
 
@@ -92,21 +95,19 @@ export default async function handler(
     // JSON yanıtı döndür
     const responseData = { user: userWithoutPassword };
     console.log(`[${new Date().toISOString()}] Başarılı yanıt gönderiliyor:`, JSON.stringify(responseData).substring(0, 100));
-    
-    res.setHeader('Content-Type', 'application/json');
+
     return res.status(200).json(responseData);
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Giriş hatası:`, error);
     // Hata durumunda da JSON yanıtı döndür
-    const errorResponse = { 
-      error: 'Sunucu hatası', 
+    const errorResponse = {
+      error: 'Sunucu hatası',
       details: error instanceof Error ? error.message : 'Bilinmeyen hata',
       stack: error instanceof Error ? error.stack : undefined
     };
-    
+
     console.log(`[${new Date().toISOString()}] Hata yanıtı gönderiliyor:`, JSON.stringify(errorResponse).substring(0, 100));
-    
-    res.setHeader('Content-Type', 'application/json');
+
     return res.status(500).json(errorResponse);
   } finally {
     // Veritabanı bağlantısını kapat

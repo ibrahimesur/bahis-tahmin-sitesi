@@ -6,13 +6,18 @@
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
+  # JWT için gizli anahtar - Netlify Dashboard'dan değiştirilebilir
+  JWT_SECRET = "netlify_dashboard_uzerinden_guncellenmeli"
 
+# Netlify Functions yapılandırması
 # [[plugins]]
 #   package = "@netlify/plugin-nextjs"
 
 # [functions]
 #   node_bundler = "esbuild"
-#   included_files = ["prisma/**"]
+#   included_files = ["node_modules/.prisma/**", "prisma/**"]
+#   external_node_modules = ["@prisma/client", "@prisma/engines"]
+#   directory = "netlify/functions"
 
 [build.processing.css]
   bundle = true
@@ -22,7 +27,13 @@
   bundle = true
   minify = true
 
-# Tüm istekleri index.html'e yönlendir
+# API isteklerini functions'a, diğer istekleri index.html'e yönlendir
+# [[redirects]]
+#   from = "/api/*"
+#   to = "/.netlify/functions/:splat"
+#   status = 200
+#   force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

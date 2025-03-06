@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 // PrismaClient global olarak tanımlanmışsa yeniden oluşturma
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
@@ -9,21 +9,61 @@ const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   console.error('DATABASE_URL çevre değişkeni tanımlanmamış!');
+  console.error('Bu hata veritabanı bağlantısını engelleyecektir.');
 }
 
 // Prisma istemcisini yapılandır
 const prismaClientSingleton = () => {
   console.log('Prisma istemcisi oluşturuluyor...');
   console.log('DATABASE_URL tanımlı mı:', !!databaseUrl);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('Çalışma ortamı:', process.env.NETLIFY ? 'Netlify' : 'Lokal/Diğer');
   
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl
-      }
-    },
-    log: ['query', 'error', 'warn'],
-  });
+  try {
+    // Bağlantı seçeneklerini yapılandır
+    const connectionOptions = {
+      datasources: {
+        db: {
+          url: databaseUrl
+        }
+      },
+      log: ['error', 'warn'] as Prisma.LogLevel[],
+    };
+    
+    // Netlify ortamında ek yapılandırma
+    if (process.env.NETLIFY) {
+      console.log('Netlify ortamı için ek yapılandırma uygulanıyor');
+    }
+    
+    const prismaClient = new PrismaClient(connectionOptions);
+    
+    console.log('Prisma istemcisi başarıyla oluşturuldu');
+    
+    // Bağlantıyı test et
+    prismaClient.$connect()
+      .then(() => console.log('Veritabanına bağlantı başarılı'))
+      .catch(err => {
+        console.error('Veritabanı bağlantı hatası:', err);
+        // Bağlantı hatası durumunda yeniden deneme mekanizması
+        console.log('Bağlantı yeniden deneniyor...');
+        setTimeout(() => {
+          prismaClient.$connect()
+            .then(() => console.log('Veritabanına bağlantı başarılı (yeniden deneme)'))
+            .catch(retryErr => {
+              console.error('Veritabanı bağlantı hatası (yeniden deneme):', retryErr);
+              console.log('Bağlantı bilgileri:');
+              console.log('- DATABASE_URL tanımlı:', !!process.env.DATABASE_URL);
+              console.log('- NODE_ENV:', process.env.NODE_ENV);
+              console.log('- Çalışma ortamı:', process.env.NETLIFY ? 'Netlify' : 'Lokal/Diğer');
+            });
+        }, 2000);
+      });
+      
+    return prismaClient;
+  } catch (error) {
+    console.error('Prisma istemcisi oluşturulurken hata:', error);
+    throw error;
+  }
 };
 
 // Geliştirme ortamında global nesne üzerinde sakla

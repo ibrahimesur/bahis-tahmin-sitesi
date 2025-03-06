@@ -4,17 +4,71 @@ import { LiveScore } from '../types';
 import MatchCard from '../components/matches/MatchCard';
 import { fetchLiveMatches } from '../services/api';
 
-const LEAGUES = [
+// Ligleri ülkelere göre organize et
+const COUNTRIES = [
+  { 
+    id: 'england',
+    name: 'İngiltere', 
+    leagues: [
+      { id: 'Premier League', name: 'Premier League' },
+      { id: 'Championship', name: 'Championship' }
+    ]
+  },
+  { 
+    id: 'spain',
+    name: 'İspanya', 
+    leagues: [
+      { id: 'La Liga', name: 'La Liga' }
+    ]
+  },
+  { 
+    id: 'germany',
+    name: 'Almanya', 
+    leagues: [
+      { id: 'Bundesliga', name: 'Bundesliga' }
+    ]
+  },
+  { 
+    id: 'italy',
+    name: 'İtalya', 
+    leagues: [
+      { id: 'Serie A', name: 'Serie A' }
+    ]
+  },
+  { 
+    id: 'france',
+    name: 'Fransa', 
+    leagues: [
+      { id: 'Ligue 1', name: 'Ligue 1' }
+    ]
+  },
+  { 
+    id: 'netherlands',
+    name: 'Hollanda', 
+    leagues: [
+      { id: 'Eredivisie', name: 'Eredivisie' }
+    ]
+  },
+  { 
+    id: 'portugal',
+    name: 'Portekiz', 
+    leagues: [
+      { id: 'Primeira Liga', name: 'Primeira Liga' }
+    ]
+  },
+  { 
+    id: 'europe',
+    name: 'Avrupa', 
+    leagues: [
+      { id: 'UEFA Champions League', name: 'UEFA Champions League' }
+    ]
+  }
+];
+
+// Eski LEAGUES sabitinden alınan tüm ligler listesi (filtreleme için)
+const ALL_LEAGUES = [
   { id: 'all', name: 'Tüm Ligler' },
-  { id: 'Premier League', name: 'Premier League' },
-  { id: 'La Liga', name: 'La Liga' },
-  { id: 'Bundesliga', name: 'Bundesliga' },
-  { id: 'Serie A', name: 'Serie A' },
-  { id: 'Ligue 1', name: 'Ligue 1' },
-  { id: 'UEFA Champions League', name: 'UEFA Champions League' },
-  { id: 'Championship', name: 'Championship' },
-  { id: 'Primeira Liga', name: 'Primeira Liga' },
-  { id: 'Eredivisie', name: 'Eredivisie' }
+  ...COUNTRIES.flatMap(country => country.leagues)
 ];
 
 // Tarih formatlama fonksiyonu
@@ -52,6 +106,15 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<LiveScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedCountries, setExpandedCountries] = useState<Record<string, boolean>>({});
+  
+  // Ülke genişletme durumunu değiştiren fonksiyon
+  const toggleCountry = (countryId: string) => {
+    setExpandedCountries(prev => ({
+      ...prev,
+      [countryId]: !prev[countryId]
+    }));
+  };
   
   useEffect(() => {
     const loadMatches = async () => {
@@ -181,16 +244,50 @@ export default function MatchesPage() {
             <div className="bg-white rounded-lg shadow p-4 sticky top-4">       
               <h2 className="text-lg font-semibold mb-4">Ligler</h2>
               <div className="space-y-2">
-                {LEAGUES.map(league => (
-                  <button
-                    key={league.id}
-                    onClick={() => setSelectedLeague(league.id)}
-                    className={`w-full text-left px-4 py-2 rounded ${
-                      selectedLeague === league.id ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {league.name}
-                  </button>
+                {/* Tüm Ligler seçeneği */}
+                <button
+                  onClick={() => setSelectedLeague('all')}
+                  className={`w-full text-left px-4 py-2 rounded ${
+                    selectedLeague === 'all' ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  Tüm Ligler
+                </button>
+                
+                {/* Ülkelere göre gruplandırılmış ligler */}
+                {COUNTRIES.map(country => (
+                  <div key={country.id} className="border-t pt-2">
+                    <button
+                      onClick={() => toggleCountry(country.id)}
+                      className="w-full flex items-center justify-between px-4 py-2 font-medium text-gray-700 hover:bg-gray-100 rounded"
+                    >
+                      <span>{country.name}</span>
+                      <svg 
+                        className={`w-5 h-5 transition-transform ${expandedCountries[country.id] ? 'transform rotate-180' : ''}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {expandedCountries[country.id] && (
+                      <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
+                        {country.leagues.map(league => (
+                          <button
+                            key={league.id}
+                            onClick={() => setSelectedLeague(league.id)}
+                            className={`w-full text-left px-3 py-1.5 rounded text-sm ${
+                              selectedLeague === league.id ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100'
+                            }`}
+                          >
+                            {league.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

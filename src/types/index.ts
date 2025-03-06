@@ -60,13 +60,14 @@ export interface AuthUser {
 export interface LoginFormData {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterFormData {
   username: string;
   email: string;
   password: string;
-  passwordConfirm: string;
+  passwordConfirm?: string;
 }
 
 export interface LiveScore {

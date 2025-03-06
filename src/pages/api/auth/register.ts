@@ -46,28 +46,42 @@ export default async function handler(
 
     console.log('Kayıt isteği alındı:', { username, email });
 
-    // E-posta ve kullanıcı adı kontrolü
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username }
-        ]
-      }
-    });
+    // Veritabanı bağlantısını kontrol et
+    try {
+      await prisma.$connect();
+      console.log('Veritabanı bağlantısı başarılı');
+    } catch (dbConnectError) {
+      console.error('Veritabanı bağlantı hatası:', dbConnectError);
+      return res.status(500).json({ error: 'Veritabanına bağlanılamadı' });
+    }
 
-    if (existingUser) {
-      console.log('Kullanıcı zaten var:', existingUser.email);
-      return res.status(400).json({
-        error: 'Bu e-posta veya kullanıcı adı zaten kullanılıyor'
+    // E-posta ve kullanıcı adı kontrolü
+    try {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email },
+            { username }
+          ]
+        }
       });
+
+      if (existingUser) {
+        console.log('Kullanıcı zaten var:', existingUser.email);
+        return res.status(400).json({
+          error: 'Bu e-posta veya kullanıcı adı zaten kullanılıyor'
+        });
+      }
+    } catch (findError) {
+      console.error('Kullanıcı arama hatası:', findError);
+      return res.status(500).json({ error: 'Kullanıcı kontrolü sırasında hata oluştu' });
     }
 
     // Şifreyi hashle
     const hashedPassword = await bcrypt.hash(password, 10);
 
     console.log('Kullanıcı oluşturuluyor...');
-    
+
     try {
       // Kullanıcıyı oluştur
       const user = await prisma.user.create({
@@ -89,12 +103,16 @@ export default async function handler(
         message: 'Kayıt başarılı',
         user: userWithoutPassword
       };
-      
+
       console.log('Gönderilen yanıt:', response);
       return res.status(201).json(response);
     } catch (prismaError) {
       console.error('Prisma hatası:', prismaError);
       return res.status(500).json({ error: 'Veritabanı hatası: ' + (prismaError instanceof Error ? prismaError.message : 'Bilinmeyen hata') });
+    } finally {
+      // Bağlantıyı kapat
+      await prisma.$disconnect();
+      console.log('Veritabanı bağlantısı kapatıldı');
     }
   } catch (error) {
     console.error('Kayıt hatası:', error);
