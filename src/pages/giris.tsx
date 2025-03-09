@@ -53,23 +53,32 @@ const LoginPage: NextPage = () => {
       }
 
       const data = await response.json();
-      console.log('Giriş başarılı:', { 
-        userId: data.user.id, 
-        role: data.user.role,
-        hasToken: !!data.user.token,
-        tokenLength: data.user.token ? data.user.token.length : 0
+      console.log('JSON yanıtı başarıyla ayrıştırıldı:', JSON.stringify(data).substring(0, 100) + '...');
+      console.log('Giriş başarılı, kullanıcı bilgileri alındı');
+      
+      // Token bilgisini kullanıcı nesnesine ekle
+      const userData = {
+        ...data.user,
+        token: data.token // API'dan gelen token bilgisini kullanıcı nesnesine ekle
+      };
+      
+      console.log('Kullanıcı nesnesi güncellendi:', { 
+        userId: userData.id, 
+        role: userData.role,
+        hasToken: !!userData.token,
+        tokenLength: userData.token ? userData.token.length : 0
       });
       
       // Kullanıcı bilgilerini AuthContext'e kaydet
-      login(data.user);
+      login(userData);
       
       // Başarılı giriş mesajı
       toast.success('Giriş başarılı!');
       
       // Yönlendirme
-      if (data.user.role === 'admin') {
+      if (userData.role === 'admin') {
         router.push('/admin');
-      } else if (data.user.role === 'editor') {
+      } else if (userData.role === 'editor') {
         router.push('/editor');
       } else {
         router.push('/');
