@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { AuthProvider } from '../contexts/AuthContext';
+import { Toaster } from 'react-hot-toast';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -24,6 +25,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <Footer />
         </div>
       </Navbar>
+      <Toaster position="top-right" />
     </AuthProvider>
   );
 }

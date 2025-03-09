@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { login } from '../../utils/api';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { toast } from 'react-hot-toast';
 
 const LoginForm = () => {
   const router = useRouter();
@@ -23,38 +24,46 @@ const LoginForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setDebugInfo(null);
     setLoading(true);
+    setError('');
 
     try {
-      console.log('Giriş denemesi:', { email: formData.email });
-      const result = await login(formData);
-      console.log('Giriş başarılı:', result);
-      
-      // Başarılı giriş sonrası ana sayfaya yönlendir
-      router.push('/');
-    } catch (error: any) {
-      console.error('Giriş hatası:', error);
-      
-      // Daha detaylı hata bilgisi
-      let errorMessage = 'Giriş yapılırken bir hata oluştu';
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-        // Ek hata bilgilerini debug kısmında göster
-        setDebugInfo(JSON.stringify({
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          url: window.location.href,
-          apiBaseUrl: typeof window !== 'undefined' && window.location.hostname === 'localhost'
-            ? 'http://localhost:8888/.netlify/functions'
-            : '/.netlify/functions'
-        }, null, 2));
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Giriş yapılırken bir hata oluştu');
       }
+
+      // Kullanıcı bilgilerini ve token'ı kaydet
+      login({
+        ...data.user,
+        token: data.token
+      });
+
+      // Başarılı giriş mesajı
+      toast.success('Giriş başarılı!');
       
-      setError(errorMessage);
+      // Kullanıcı rolüne göre yönlendirme
+      if (data.user.role === 'editor') {
+        router.push('/editor/dashboard');
+      } else if (data.user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        // Normal kullanıcı için ana sayfaya yönlendir
+        router.push('/');
+      }
+    } catch (err) {
+      console.error('Giriş hatası:', err);
+      setError(err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu');
+      toast.error(err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu');
     } finally {
       setLoading(false);
     }
