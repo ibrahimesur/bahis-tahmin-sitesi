@@ -8,7 +8,8 @@
   NODE_VERSION = "18"
   # JWT için gizli anahtar - Netlify Dashboard'dan değiştirilebilir
   JWT_SECRET = "c78asdjkjoh890908dSA90cxuj9asd80asdujHa90sdua90sdu0jd9a0s0du9r5u"
-  
+  # Admin işlemleri için gizli anahtar
+  ADMIN_SECRET_KEY = "Mashurov2002"
 
 # Netlify Functions yapılandırması
 [[plugins]]
@@ -55,3 +56,6 @@
 [create.environment]
   NODE_VERSION = "18"
   NEXT_USE_NETLIFY_EDGE = "true"
+
+
+
