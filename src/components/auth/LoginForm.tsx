@@ -32,7 +32,7 @@ const LoginForm = () => {
     try {
       console.log('LoginForm: Giriş denemesi başlatılıyor', { email: formData.email });
       
-      const response = await fetch('/api/auth-login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

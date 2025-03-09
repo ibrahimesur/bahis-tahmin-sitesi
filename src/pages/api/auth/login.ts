@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import prisma from '../../../lib/prisma';
 import { LoginFormData } from '../../../types';
+import jwt from 'jsonwebtoken';
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,6 +10,7 @@ export default async function handler(
 ) {
   console.log(`[${new Date().toISOString()}] Giriş API isteği alındı:`, req.method);
   console.log(`[${new Date().toISOString()}] DATABASE_URL:`, process.env.DATABASE_URL ? 'Tanımlı' : 'Tanımlı değil');
+  console.log(`[${new Date().toISOString()}] JWT_SECRET:`, process.env.JWT_SECRET ? 'Tanımlı' : 'Tanımlı değil');
   
   // CORS başlıklarını ekle
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -88,13 +90,38 @@ export default async function handler(
       return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
     }
 
+    // JWT token oluştur
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error(`[${new Date().toISOString()}] JWT_SECRET ortam değişkeni tanımlanmamış`);
+      return res.status(500).json({ error: 'Sunucu yapılandırma hatası' });
+    }
+
+    console.log(`[${new Date().toISOString()}] JWT token oluşturuluyor`);
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        email: user.email 
+      },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+    console.log(`[${new Date().toISOString()}] JWT token oluşturuldu, uzunluk:`, token.length);
+
     console.log(`[${new Date().toISOString()}] Giriş başarılı:`, user.username);
     // Hassas bilgileri çıkar
     const { password: _, ...userWithoutPassword } = user;
 
     // JSON yanıtı döndür
-    const responseData = { user: userWithoutPassword };
-    console.log(`[${new Date().toISOString()}] Başarılı yanıt gönderiliyor:`, JSON.stringify(responseData).substring(0, 100));
+    const responseData = { 
+      user: userWithoutPassword,
+      token,
+      success: true
+    };
+    console.log(`[${new Date().toISOString()}] Başarılı yanıt gönderiliyor:`, JSON.stringify({
+      ...responseData,
+      token: token ? `${token.substring(0, 10)}...` : null
+    }).substring(0, 100));
 
     return res.status(200).json(responseData);
   } catch (error) {
