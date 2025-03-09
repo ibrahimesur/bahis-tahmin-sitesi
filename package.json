@@ -9,6 +9,7 @@
     "postinstall": "prisma generate --schema=./prisma/schema.prisma"
   },
   "dependencies": {
+    "@next/bundle-analyzer": "^15.2.1",
     "@prisma/client": "^6.4.1",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
