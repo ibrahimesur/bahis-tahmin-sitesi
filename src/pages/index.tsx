@@ -80,16 +80,22 @@ export default function HomePage() {
       }
     };
 
+    // Editörleri getir
+    const fetchEditors = async () => {
+      try {
+        const res = await fetch('/api/editors');
+        const data = await res.json();
+        setEditors(data.editors || []);
+        console.log('Editörler yüklendi:', data.editors);
+      } catch (error) {
+        console.error('Editörler yüklenirken hata oluştu:', error);
+        // Hata durumunda boş dizi ata
+        setEditors([]);
+      }
+    };
+
     // Örnek veriler (gerçek uygulamada API'den gelecek)
     const loadSampleData = () => {
-      // Örnek editörler
-      setEditors([
-        { id: 1, name: 'Ahmet Yılmaz', image: '/images/editors/editor1.jpg', successRate: 78, followers: 1250 },
-        { id: 2, name: 'Mehmet Demir', image: '/images/editors/editor2.jpg', successRate: 82, followers: 980 },
-        { id: 3, name: 'Ayşe Kaya', image: '/images/editors/editor3.jpg', successRate: 75, followers: 1540 },
-        { id: 4, name: 'Fatma Şahin', image: '/images/editors/editor4.jpg', successRate: 80, followers: 1120 },
-      ]);
-
       // Örnek tahminler (gerçek uygulamada API'den gelecek)
       setPredictions([
         { 
@@ -98,12 +104,12 @@ export default function HomePage() {
             id: 101,
             homeTeam: { name: 'Galatasaray', crest: 'https://crests.football-data.org/132.png' },
             awayTeam: { name: 'Fenerbahçe', crest: 'https://crests.football-data.org/133.png' },
-            utcDate: '2025-03-05T19:00:00Z',
+            utcDate: '2023-04-10T19:00:00Z',
             status: 'SCHEDULED',
             score: { fullTime: { home: null, away: null } },
             competition: { name: 'Süper Lig', emblem: 'https://crests.football-data.org/TUR.png' }
           },
-          prediction: 'Ev Sahibi Kazanır',
+          prediction: 'Home Win',
           odds: 1.85,
           editor: { name: 'Ahmet Yılmaz', image: '/images/editors/editor1.jpg' }
         },
@@ -139,7 +145,7 @@ export default function HomePage() {
         },
       ]);
 
-      // Örnek günün kuponu
+      // Örnek kupon
       setCoupon({
         id: 1,
         matches: [
@@ -148,12 +154,12 @@ export default function HomePage() {
               id: 101,
               homeTeam: { name: 'Galatasaray', crest: 'https://crests.football-data.org/132.png' },
               awayTeam: { name: 'Fenerbahçe', crest: 'https://crests.football-data.org/133.png' },
-              utcDate: '2025-03-05T19:00:00Z',
+              utcDate: '2023-04-10T19:00:00Z',
               status: 'SCHEDULED',
               score: { fullTime: { home: null, away: null } },
               competition: { name: 'Süper Lig', emblem: 'https://crests.football-data.org/TUR.png' }
             },
-            prediction: 'Ev Sahibi Kazanır',
+            prediction: 'Home Win',
             odds: 1.85
           },
           {
@@ -183,14 +189,14 @@ export default function HomePage() {
             odds: 1.75
           }
         ],
-        totalOdds: 5.36
+        totalOdds: 3.42
       });
-
-      setLoading(false);
     };
 
     fetchMatches();
-    loadSampleData(); // Örnek verileri yükle
+    fetchEditors(); // Editörleri getir
+    loadSampleData();
+    setLoading(false);
   }, []);
 
   // Tarih formatını düzenleyen yardımcı fonksiyon
