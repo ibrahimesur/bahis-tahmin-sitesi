@@ -1,9 +1,9 @@
 [build]
-  command = "npm run build:netlify"
+  command = "npm run build"
   publish = "out"
 
 [build.environment]
-  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
   NEXT_TELEMETRY_DISABLED = "1"
   NODE_VERSION = "18"
   # JWT için gizli anahtar - Netlify Dashboard'dan değiştirilebilir
@@ -11,8 +11,8 @@
   
 
 # Netlify Functions yapılandırması
-# [[plugins]]
-#   package = "@netlify/plugin-nextjs"
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 # [functions]
 #   node_bundler = "esbuild"
