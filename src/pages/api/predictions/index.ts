@@ -127,33 +127,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ message: 'Başlık, içerik, maç ve tahmin alanları zorunludur' });
       }
       
-      // Maçın var olup olmadığını kontrol et
-      const match = await prisma.match.findUnique({
-        where: { id: matchId }
-      });
-      
-      if (!match) {
-        return res.status(404).json({ message: 'Seçilen maç bulunamadı' });
-      }
-      
-      // Yeni tahmin oluştur
-      const newPrediction = await prisma.prediction.create({
-        data: {
-          title,
-          content,
-          matchId,
-          prediction,
-          odds: parseFloat(odds.toString()) || 1.5,
-          status: 'PENDING',
-          authorId: userId
+      try {
+        // Maçın var olup olmadığını kontrol et
+        const match = await prisma.match.findUnique({
+          where: { id: matchId }
+        });
+        
+        if (!match) {
+          return res.status(404).json({ message: 'Seçilen maç bulunamadı' });
         }
-      });
-      
-      console.log('Tahmin başarıyla oluşturuldu:', { id: newPrediction.id, title: newPrediction.title });
-      return res.status(201).json(newPrediction);
+        
+        // Yeni tahmin oluştur
+        const newPrediction = await prisma.prediction.create({
+          data: {
+            title,
+            content,
+            matchId,
+            prediction,
+            odds: parseFloat(odds.toString()) || 1.5,
+            status: 'PENDING',
+            authorId: userId
+          }
+        });
+        
+        console.log('Tahmin başarıyla oluşturuldu:', { id: newPrediction.id, title: newPrediction.title });
+        return res.status(201).json(newPrediction);
+      } catch (dbError) {
+        console.error('Veritabanı hatası:', dbError);
+        return res.status(500).json({ 
+          message: 'Tahmin oluşturulurken veritabanı hatası oluştu',
+          error: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+        });
+      }
     } catch (error) {
       console.error('Tahmin oluşturulurken hata:', error);
-      return res.status(500).json({ message: 'Sunucu hatası' });
+      return res.status(500).json({ 
+        message: 'Sunucu hatası',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      });
     }
   }
   

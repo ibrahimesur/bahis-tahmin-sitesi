@@ -126,22 +126,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ message: 'Başlık ve içerik alanları zorunludur' });
       }
       
-      // Yeni makale oluştur
-      const article = await prisma.article.create({
-        data: {
-          title,
-          content,
-          category: category || 'genel',
-          image: image || null,
-          authorId: userId
-        }
-      });
-      
-      console.log('Makale başarıyla oluşturuldu:', { id: article.id, title: article.title });
-      return res.status(201).json(article);
+      try {
+        // Yeni makale oluştur
+        const article = await prisma.article.create({
+          data: {
+            title,
+            content,
+            category: category || 'genel',
+            image: image || null,
+            authorId: userId
+          }
+        });
+        
+        console.log('Makale başarıyla oluşturuldu:', { id: article.id, title: article.title });
+        return res.status(201).json(article);
+      } catch (dbError) {
+        console.error('Veritabanı hatası:', dbError);
+        return res.status(500).json({ 
+          message: 'Makale oluşturulurken veritabanı hatası oluştu',
+          error: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+        });
+      }
     } catch (error) {
       console.error('Makale oluşturulurken hata:', error);
-      return res.status(500).json({ message: 'Sunucu hatası' });
+      return res.status(500).json({ 
+        message: 'Sunucu hatası',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      });
     }
   }
   

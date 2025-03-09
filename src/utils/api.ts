@@ -108,13 +108,31 @@ export const apiRequest = async (
       throw new Error('Yetkilendirme başarısız');
     }
 
-    // Yanıtı JSON olarak parse et
-    const responseData = await response.json();
+    // Yanıtı JSON olarak parse etmeyi dene
+    let responseData;
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        // JSON olmayan yanıt için metin olarak al
+        const text = await response.text();
+        console.warn('API yanıtı JSON değil:', text);
+        responseData = { message: text };
+      }
+    } catch (error) {
+      console.error('API yanıtı JSON olarak ayrıştırılamadı:', error);
+      const text = await response.text();
+      console.warn('Ham yanıt:', text);
+      responseData = { message: 'Sunucu yanıtı işlenemedi' };
+    }
+
     console.log('API yanıt verisi:', responseData);
 
     // Başarısız yanıt için hata fırlat
     if (!response.ok) {
-      throw new Error(responseData.message || 'Bir hata oluştu');
+      const errorMessage = responseData.message || 'Bir hata oluştu';
+      throw new Error(errorMessage);
     }
 
     return responseData;
