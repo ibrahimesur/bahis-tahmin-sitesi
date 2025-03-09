@@ -33,11 +33,22 @@ const AddEditorPage = () => {
     }
 
     try {
+      // Kullanıcı oturum kontrolü
+      if (!user || !user.token) {
+        console.error('Kullanıcı oturumu bulunamadı veya token yok!', { user });
+        toast.error('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+        router.push('/giris');
+        return;
+      }
+
+      console.log('Arama başlatılıyor:', { email, userRole: user.role });
       setIsSubmitting(true);
       setSearchPerformed(true);
       
       // apiRequest fonksiyonunu kullanarak API çağrısı yapıyoruz
       const data = await apiRequest(`admin/users/search?email=${encodeURIComponent(email)}`, 'GET');
+      console.log('Arama sonuçları:', data);
+      
       setSearchResults(data.users);
 
       // Kullanıcı bulunamadıysa bildir
@@ -55,6 +66,15 @@ const AddEditorPage = () => {
 
   const makeEditor = async (userId: string) => {
     try {
+      // Kullanıcı oturum kontrolü
+      if (!user || !user.token) {
+        console.error('Kullanıcı oturumu bulunamadı veya token yok!', { user });
+        toast.error('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+        router.push('/giris');
+        return;
+      }
+
+      console.log('Editör yapma işlemi başlatılıyor:', { userId, userRole: user.role });
       setIsSubmitting(true);
       
       // apiRequest fonksiyonunu kullanarak API çağrısı yapıyoruz
@@ -63,6 +83,7 @@ const AddEditorPage = () => {
         newRole: 'editor'
       });
       
+      console.log('Editör yapma sonucu:', data);
       toast.success(data.message || 'Kullanıcı başarıyla editör yapıldı');
       
       // Sonuçları güncelle
