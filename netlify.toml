@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "out"
+  publish = ".next"
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "false"
@@ -41,7 +41,7 @@
   status = 200
 
 [create]
-  publish_dir = "out"
+  publish_dir = ".next"
   content_dir = "content"
   base_dir = "."
   dev_command = "npm run dev"
