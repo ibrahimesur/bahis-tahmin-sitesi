@@ -46,11 +46,18 @@ const AdminUsersPage = () => {
       
       console.log('Kullanıcılar getiriliyor...', { 
         userRole: user.role,
-        tokenLength: user.token.length
+        tokenLength: user.token.length,
+        token: user.token.substring(0, 10) + '...'
       });
       
-      const response = await fetch('/api/admin/users', {
+      // API endpoint'i düzeltildi
+      const apiUrl = '/api/admin/users';
+      console.log('API isteği yapılıyor:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`
         }
       });
@@ -64,17 +71,47 @@ const AdminUsersPage = () => {
         if (response.status === 401) {
           console.error('Yetkilendirme hatası: Geçersiz veya eksik token');
           toast.error('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+          
+          // Kullanıcı bilgilerini temizle
+          localStorage.removeItem('user');
+          
+          // Giriş sayfasına yönlendir
           router.push('/giris');
           throw new Error('Yetkilendirme başarısız: Geçersiz token');
         }
         
+        // Yanıt içeriğini al
         const errorText = await response.text();
         console.error('API hatası:', { status: response.status, text: errorText });
-        throw new Error('Kullanıcılar yüklenirken bir hata oluştu');
+        
+        try {
+          // JSON olarak ayrıştırmayı dene
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.message || 'Kullanıcılar yüklenirken bir hata oluştu');
+        } catch (parseError) {
+          // JSON ayrıştırma hatası
+          throw new Error(`Sunucu hatası (${response.status}): ${errorText || response.statusText}`);
+        }
       }
 
-      const data = await response.json();
-      console.log('Kullanıcılar başarıyla alındı', { count: data.users.length });
+      // Yanıt içeriğini al
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        // JSON olarak ayrıştırmayı dene
+        data = JSON.parse(responseText);
+        console.log('Kullanıcılar başarıyla alındı', { count: data.users?.length || 0 });
+      } catch (parseError) {
+        console.error('JSON ayrıştırma hatası:', parseError, responseText);
+        throw new Error('Sunucu yanıtı geçersiz format içeriyor');
+      }
+      
+      if (!data.users) {
+        console.error('API yanıtında users alanı bulunamadı:', data);
+        throw new Error('Sunucu yanıtında kullanıcı bilgisi eksik');
+      }
+      
       setUsers(data.users);
     } catch (error) {
       console.error('Kullanıcılar yüklenirken hata:', error);
