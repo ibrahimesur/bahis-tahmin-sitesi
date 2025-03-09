@@ -10,8 +10,21 @@ interface JwtPayload {
   exp?: number;
 }
 
+// Hataları yakalamak için yardımcı fonksiyon
+const errorHandler = (res: NextApiResponse, error: any, statusCode: number = 500, message: string = 'Sunucu hatası') => {
+  console.error(message, error);
+  
+  // Yanıtı JSON olarak döndür
+  res.status(statusCode).json({
+    success: false,
+    message: message,
+    error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+  });
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // CORS başlıkları
+  // CORS başlıklarını her durumda ekle
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -19,7 +32,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // OPTIONS isteği için hızlı yanıt
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).json({ success: true });
+    return;
   }
 
   // GET isteği - Makaleleri listele
@@ -71,6 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const totalPages = Math.ceil(totalCount / pageSize);
         
         return res.status(200).json({
+          success: true,
           articles,
           pagination: {
             total: totalCount,
@@ -80,75 +95,91 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         });
       } catch (dbError) {
-        console.error('Makaleler listelenirken veritabanı hatası:', dbError);
-        return res.status(500).json({ 
-          message: 'Makaleler listelenirken veritabanı hatası oluştu',
-          error: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
-        });
+        return errorHandler(res, dbError, 500, 'Makaleler listelenirken veritabanı hatası oluştu');
       }
     } catch (error) {
-      console.error('Makaleler listelenirken hata:', error);
-      return res.status(500).json({ 
-        message: 'Sunucu hatası',
-        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
-      });
+      return errorHandler(res, error, 500, 'Makaleler listelenirken hata oluştu');
     }
   }
   
   // POST isteği - Yeni makale oluştur
   else if (req.method === 'POST') {
-    // Token doğrulama
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Yetkilendirme başarısız' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    let decodedToken: JwtPayload;
-
     try {
-      decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as JwtPayload;
-      console.log('Token doğrulandı:', { 
-        userId: decodedToken.userId, 
-        role: decodedToken.role 
-      });
-    } catch (error) {
-      console.error('Token doğrulama hatası:', error);
-      return res.status(401).json({ message: 'Geçersiz veya süresi dolmuş token' });
-    }
+      // Token doğrulama
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          success: false,
+          message: 'Yetkilendirme başarısız'
+        });
+      }
 
-    const userId = decodedToken.userId;
+      const token = authHeader.split(' ')[1];
+      let decodedToken: JwtPayload;
 
-    // Kullanıcının editör veya admin olup olmadığını kontrol et
-    // Büyük/küçük harf duyarsız kontrol
-    const userRole = decodedToken.role.toLowerCase();
-    console.log('Kullanıcı rolü kontrolü:', { role: userRole });
-    
-    if (userRole !== 'editor' && userRole !== 'admin') {
-      console.error('Yetkisiz erişim:', { userId, role: userRole });
-      return res.status(403).json({ message: 'Bu işlem için yetkiniz yok' });
-    }
+      try {
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as JwtPayload;
+        console.log('Token doğrulandı:', { 
+          userId: decodedToken.userId, 
+          role: decodedToken.role 
+        });
+      } catch (jwtError) {
+        console.error('Token doğrulama hatası:', jwtError);
+        return res.status(401).json({ 
+          success: false,
+          message: 'Geçersiz veya süresi dolmuş token',
+          error: process.env.NODE_ENV === 'development' ? String(jwtError) : undefined
+        });
+      }
 
-    try {
+      const userId = decodedToken.userId;
+
+      // Kullanıcının editör veya admin olup olmadığını kontrol et
+      // Büyük/küçük harf duyarsız kontrol
+      const userRole = decodedToken.role.toLowerCase();
+      console.log('Kullanıcı rolü kontrolü:', { role: userRole });
+      
+      if (userRole !== 'editor' && userRole !== 'admin') {
+        console.error('Yetkisiz erişim:', { userId, role: userRole });
+        return res.status(403).json({ 
+          success: false,
+          message: 'Bu işlem için yetkiniz yok'
+        });
+      }
+
+      // İstek gövdesini kontrol et
       const { title, content, category, image } = req.body;
-      console.log('Makale oluşturma isteği:', { title, category, contentLength: content?.length });
+      console.log('Makale oluşturma isteği:', { 
+        title, 
+        category, 
+        contentLength: content?.length,
+        body: req.body 
+      });
       
       // Zorunlu alanları kontrol et
       if (!title || !content) {
-        return res.status(400).json({ message: 'Başlık ve içerik alanları zorunludur' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'Başlık ve içerik alanları zorunludur'
+        });
       }
       
       try {
         // Kullanıcının varlığını kontrol et
         const user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true }
+          select: { id: true, role: true }
         });
         
         if (!user) {
           console.error('Kullanıcı bulunamadı:', { userId });
-          return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+          return res.status(404).json({ 
+            success: false,
+            message: 'Kullanıcı bulunamadı'
+          });
         }
+        
+        console.log('Kullanıcı doğrulandı:', { id: user.id, role: user.role });
         
         // Yeni makale oluştur
         const article = await prisma.article.create({
@@ -162,25 +193,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
         
         console.log('Makale başarıyla oluşturuldu:', { id: article.id, title: article.title });
-        return res.status(201).json(article);
-      } catch (dbError) {
-        console.error('Veritabanı hatası:', dbError);
-        return res.status(500).json({ 
-          message: 'Makale oluşturulurken veritabanı hatası oluştu',
-          error: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+        return res.status(201).json({
+          success: true,
+          id: article.id,
+          title: article.title,
+          message: 'Makale başarıyla oluşturuldu'
         });
+      } catch (dbError) {
+        return errorHandler(res, dbError, 500, 'Makale oluşturulurken veritabanı hatası oluştu');
       }
     } catch (error) {
-      console.error('Makale oluşturulurken hata:', error);
-      return res.status(500).json({ 
-        message: 'Sunucu hatası',
-        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
-      });
+      return errorHandler(res, error, 500, 'Makale oluşturulurken hata oluştu');
     }
   }
   
   // Desteklenmeyen HTTP metodu
   else {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ 
+      success: false,
+      message: 'Method Not Allowed'
+    });
   }
 } 
