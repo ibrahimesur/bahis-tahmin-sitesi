@@ -153,9 +153,6 @@ export const apiRequest = async (
       } else {
         console.warn('Geliştirme ortamında 401 hatası alındı, ancak yönlendirme yapılmıyor');
       }
-      
-      // Hata fırlatma, isteğin devam etmesine izin ver
-      // throw new Error('Geliştirme ortamında yetkilendirme hatası: ' + response.statusText);
     }
 
     // Yanıtı işle
@@ -185,17 +182,7 @@ export const apiRequest = async (
     // Başarısız yanıt için hata fırlat
     if (!response.ok) {
       const errorMessage = responseData.message || 'Bir hata oluştu';
-      
-      // Geliştirme ortamında hata fırlatma, boş veri döndür
-      if (process.env.NODE_ENV === 'development') {
-        console.error('API yanıtı başarısız:', errorMessage);
-        // Geliştirme ortamında boş veri döndür
-        return {
-          success: false,
-          message: errorMessage,
-          isDevFallback: true
-        };
-      }
+      console.error('API yanıtı başarısız:', errorMessage);
       
       throw new Error(errorMessage);
     }
@@ -203,28 +190,18 @@ export const apiRequest = async (
     return responseData;
   } catch (error) {
     console.error('API isteği sırasında hata:', error);
-    
-    // Geliştirme ortamında hata fırlatma, boş veri döndür
-    if (process.env.NODE_ENV === 'development') {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Bilinmeyen hata',
-        isDevFallback: true
-      };
-    }
-    
     throw error;
   }
 };
 
 // Kullanıcı kaydı
 export const register = (userData: { username: string; email: string; password: string }) => {
-  return apiRequest('auth-register', 'POST', userData, false);
+  return apiRequest('auth/register', 'POST', userData, false);
 };
 
 // Kullanıcı girişi
 export const login = (credentials: { email: string; password: string }) => {
-  return apiRequest('auth-login', 'POST', credentials, false);
+  return apiRequest('auth/login', 'POST', credentials, false);
 };
 
 // Kullanıcı çıkışı

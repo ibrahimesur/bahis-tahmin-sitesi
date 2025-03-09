@@ -48,52 +48,24 @@ export default function NewArticlePage() {
       setIsSubmitting(true);
       console.log('Makale oluşturma isteği gönderiliyor:', formData);
       
-      // Debug amaçlı gönderilen veri bilgilerini göster
-      console.log('Gönderilecek veri:', JSON.stringify(formData));
+      const response = await apiRequest('articles', 'POST', formData);
       
-      // API yanıtını doğrudan bir değişkene atayarak hata kontrolünü kolaylaştır
-      let response;
-      try {
-        // API isteğini try-catch bloğu içine al
-        response = await apiRequest('articles', 'POST', formData);
-        console.log('Makale oluşturma API yanıtı:', response);
-        
-        if (!response) {
-          throw new Error('API yanıtı boş veya tanımsız');
-        }
-        
+      if (response && response.success) {
         toast.success('Makale başarıyla oluşturuldu');
-        // Yanıt içinde id varsa yönlendir, yoksa dashboard'a dön
+        
+        // Başarılı yanıtta id varsa yönlendir
         if (response.id) {
           router.push(`/editor/dashboard/articles/${response.id}`);
         } else {
-          console.warn('Yanıtta makale ID\'si bulunamadı, dashboard\'a yönlendiriliyor');
           router.push('/editor/dashboard');
         }
-      } catch (apiError) {
-        console.error('API isteği sırasında hata:', apiError);
-        
-        // API hatası detaylarını göster
-        if (apiError instanceof Error) {
-          console.error('Hata mesajı:', apiError.message);
-          console.error('Hata stack:', apiError.stack);
-        }
-        
-        throw new Error(apiError instanceof Error 
-          ? `API hatası: ${apiError.message}` 
-          : 'API isteği sırasında beklenmeyen bir hata oluştu');
+      } else {
+        // Başarısız yanıt
+        const errorMessage = response?.message || 'Makale oluşturulurken bir hata oluştu';
+        toast.error(`Makale oluşturulamadı: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Makale oluşturulurken hata:', error);
-      
-      // Hata detaylarını göster
-      if (error instanceof Error) {
-        console.error('Hata tipi:', error.name);
-        console.error('Hata mesajı:', error.message);
-        console.error('Hata stack:', error.stack);
-      } else {
-        console.error('Bilinmeyen hata türü:', typeof error);
-      }
       
       toast.error(error instanceof Error 
         ? `Makale oluşturulamadı: ${error.message}` 

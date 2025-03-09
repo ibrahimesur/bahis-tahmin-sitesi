@@ -200,10 +200,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           message: 'Makale başarıyla oluşturuldu'
         });
       } catch (dbError) {
-        return errorHandler(res, dbError, 500, 'Makale oluşturulurken veritabanı hatası oluştu');
+        console.error('Veritabanı hatası:', dbError);
+        return res.status(500).json({ 
+          success: false,
+          message: 'Makale oluşturulurken veritabanı hatası oluştu',
+          error: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+        });
       }
     } catch (error) {
-      return errorHandler(res, error, 500, 'Makale oluşturulurken hata oluştu');
+      console.error('Genel hata:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Makale oluşturulurken hata oluştu',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      });
     }
   }
   
