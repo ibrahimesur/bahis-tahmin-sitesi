@@ -97,6 +97,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as JwtPayload;
+      console.log('Token doğrulandı:', { 
+        userId: decodedToken.userId, 
+        role: decodedToken.role 
+      });
     } catch (error) {
       console.error('Token doğrulama hatası:', error);
       return res.status(401).json({ message: 'Geçersiz veya süresi dolmuş token' });
@@ -105,12 +109,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userId = decodedToken.userId;
 
     // Kullanıcının editör veya admin olup olmadığını kontrol et
-    if (decodedToken.role !== 'editor' && decodedToken.role !== 'admin') {
+    // Büyük/küçük harf duyarsız kontrol
+    const userRole = decodedToken.role.toLowerCase();
+    console.log('Kullanıcı rolü kontrolü:', { role: userRole });
+    
+    if (userRole !== 'editor' && userRole !== 'admin') {
+      console.error('Yetkisiz erişim:', { userId, role: userRole });
       return res.status(403).json({ message: 'Bu işlem için yetkiniz yok' });
     }
 
     try {
       const { title, content, matchId, prediction, odds } = req.body;
+      console.log('Tahmin oluşturma isteği:', { title, matchId, prediction });
       
       // Zorunlu alanları kontrol et
       if (!title || !content || !matchId || !prediction) {
@@ -139,6 +149,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       });
       
+      console.log('Tahmin başarıyla oluşturuldu:', { id: newPrediction.id, title: newPrediction.title });
       return res.status(201).json(newPrediction);
     } catch (error) {
       console.error('Tahmin oluşturulurken hata:', error);
