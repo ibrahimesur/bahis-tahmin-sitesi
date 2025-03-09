@@ -9,9 +9,18 @@ const API_BASE_URL =
     : '/.netlify/functions';
 
 // Kimlik doğrulama token'ını local storage'dan al
-const getToken = () => {
+export const getToken = () => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        return user.token;
+      } catch (error) {
+        console.error('Token alınırken hata:', error);
+        return null;
+      }
+    }
   }
   return null;
 };

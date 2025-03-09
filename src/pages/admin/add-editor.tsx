@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
+import { getToken } from '../../utils/api';
 
 const AddEditorPage = () => {
   const { user } = useAuth();
@@ -35,10 +36,10 @@ const AddEditorPage = () => {
       setIsSubmitting(true);
       setSearchPerformed(true);
       
-      // Gerçek API çağrısı yapıyoruz
+      // API yardımcı fonksiyonlarını kullanarak çağrı yapıyoruz
       const response = await fetch(`/api/admin/users/search?email=${encodeURIComponent(email)}`, {
         headers: {
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${getToken()}`
         }
       });
       
@@ -67,12 +68,12 @@ const AddEditorPage = () => {
     try {
       setIsSubmitting(true);
       
-      // Gerçek API çağrısı yapıyoruz
+      // API yardımcı fonksiyonlarını kullanarak çağrı yapıyoruz
       const response = await fetch('/api/admin/users/update-role', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${getToken()}`
         },
         body: JSON.stringify({
           userId,
