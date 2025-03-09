@@ -20,11 +20,19 @@ export default function NewArticlePage() {
   useEffect(() => {
     // Kullanıcı giriş yapmamışsa veya editör değilse yönlendir
     if (!user) {
+      console.log('Kullanıcı oturumu bulunamadı, giriş sayfasına yönlendiriliyor');
       router.push('/auth/login');
       return;
     }
 
+    console.log('Kullanıcı bilgileri:', { 
+      id: user.id, 
+      role: user.role, 
+      username: user.username 
+    });
+
     if (user.role !== 'editor' && user.role !== 'admin') {
+      console.error('Yetkisiz erişim:', { role: user.role });
       toast.error('Bu sayfaya erişim yetkiniz yok');
       router.push('/');
       return;
@@ -46,9 +54,35 @@ export default function NewArticlePage() {
 
     try {
       setIsSubmitting(true);
-      console.log('Makale oluşturma isteği gönderiliyor:', formData);
+      console.log('Makale oluşturma isteği gönderiliyor:', {
+        title: formData.title,
+        contentLength: formData.content.length,
+        category: formData.category,
+        hasImage: !!formData.image
+      });
       
+      // Kullanıcı token'ını kontrol et
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        console.error('Kullanıcı bilgileri localStorage\'da bulunamadı');
+        toast.error('Oturum bilgileriniz bulunamadı, lütfen tekrar giriş yapın');
+        router.push('/auth/login');
+        return;
+      }
+      
+      try {
+        const userData = JSON.parse(userStr);
+        console.log('Kullanıcı token kontrolü:', { 
+          hasToken: !!userData.token,
+          tokenLength: userData.token?.length
+        });
+      } catch (parseError) {
+        console.error('localStorage kullanıcı verisi ayrıştırma hatası:', parseError);
+      }
+      
+      console.log('API isteği gönderiliyor...');
       const response = await apiRequest('articles', 'POST', formData);
+      console.log('API yanıtı:', response);
       
       if (response && response.success) {
         toast.success('Makale başarıyla oluşturuldu');
@@ -62,10 +96,20 @@ export default function NewArticlePage() {
       } else {
         // Başarısız yanıt
         const errorMessage = response?.message || 'Makale oluşturulurken bir hata oluştu';
+        console.error('API yanıtı başarısız:', errorMessage);
         toast.error(`Makale oluşturulamadı: ${errorMessage}`);
       }
     } catch (error) {
       console.error('Makale oluşturulurken hata:', error);
+      
+      // Hata detaylarını göster
+      if (error instanceof Error) {
+        console.error('Hata tipi:', error.name);
+        console.error('Hata mesajı:', error.message);
+        console.error('Hata stack:', error.stack);
+      } else {
+        console.error('Bilinmeyen hata türü:', typeof error);
+      }
       
       toast.error(error instanceof Error 
         ? `Makale oluşturulamadı: ${error.message}` 

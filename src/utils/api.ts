@@ -82,7 +82,12 @@ export const apiRequest = async (
   includeToken: boolean = true
 ): Promise<any> => {
   try {
-    console.log(`API isteği: ${method} ${endpoint}`, { data });
+    console.log(`API isteği: ${method} ${endpoint}`, { 
+      method, 
+      endpoint,
+      dataKeys: data ? Object.keys(data) : [],
+      includeToken
+    });
     
     // URL'yi oluştur
     const url = endpoint.startsWith('http') 
@@ -129,11 +134,20 @@ export const apiRequest = async (
     // Body ekle (GET ve HEAD istekleri hariç)
     if (data && !['GET', 'HEAD'].includes(method)) {
       options.body = JSON.stringify(data);
+      console.log('API isteği: Body eklendi', { 
+        bodySize: JSON.stringify(data).length,
+        bodyPreview: JSON.stringify(data).substring(0, 100) + (JSON.stringify(data).length > 100 ? '...' : '')
+      });
     }
 
     // İsteği gönder
+    console.log('API isteği gönderiliyor...', { 
+      url, 
+      method, 
+      headers: options.headers ? Object.keys(options.headers as Record<string, string>) : []
+    });
     const response = await fetch(url, options);
-    console.log('API yanıtı:', { 
+    console.log('API yanıtı alındı:', { 
       status: response.status, 
       statusText: response.statusText,
       ok: response.ok
@@ -190,6 +204,16 @@ export const apiRequest = async (
     return responseData;
   } catch (error) {
     console.error('API isteği sırasında hata:', error);
+    
+    // Hata detaylarını göster
+    if (error instanceof Error) {
+      console.error('Hata tipi:', error.name);
+      console.error('Hata mesajı:', error.message);
+      console.error('Hata stack:', error.stack);
+    } else {
+      console.error('Bilinmeyen hata türü:', typeof error);
+    }
+    
     throw error;
   }
 };

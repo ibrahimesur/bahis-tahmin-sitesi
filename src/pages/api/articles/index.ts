@@ -104,10 +104,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
   // POST isteği - Yeni makale oluştur
   else if (req.method === 'POST') {
+    console.log('POST /api/articles - Makale oluşturma isteği alındı');
+    
     try {
       // Token doğrulama
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.error('Yetkilendirme başarısız: Token bulunamadı');
         return res.status(401).json({ 
           success: false,
           message: 'Yetkilendirme başarısız'
@@ -115,10 +118,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const token = authHeader.split(' ')[1];
+      console.log('Token alındı:', { tokenLength: token.length });
+      
       let decodedToken: JwtPayload;
 
       try {
-        decodedToken = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as JwtPayload;
+        // JWT_SECRET kontrol et
+        if (!process.env.JWT_SECRET) {
+          console.error('JWT_SECRET çevre değişkeni tanımlanmamış!');
+          return res.status(500).json({
+            success: false,
+            message: 'Sunucu yapılandırma hatası'
+          });
+        }
+        
+        decodedToken = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
         console.log('Token doğrulandı:', { 
           userId: decodedToken.userId, 
           role: decodedToken.role 
@@ -133,6 +147,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const userId = decodedToken.userId;
+      console.log('Kullanıcı ID:', userId);
 
       // Kullanıcının editör veya admin olup olmadığını kontrol et
       // Büyük/küçük harf duyarsız kontrol
@@ -153,11 +168,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         title, 
         category, 
         contentLength: content?.length,
-        body: req.body 
+        hasImage: !!image
       });
       
       // Zorunlu alanları kontrol et
       if (!title || !content) {
+        console.error('Eksik alanlar:', { hasTitle: !!title, hasContent: !!content });
         return res.status(400).json({ 
           success: false,
           message: 'Başlık ve içerik alanları zorunludur'
@@ -165,7 +181,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       try {
+        console.log('Veritabanı işlemleri başlıyor...');
+        
         // Kullanıcının varlığını kontrol et
+        console.log('Kullanıcı varlığı kontrol ediliyor:', userId);
         const user = await prisma.user.findUnique({
           where: { id: userId },
           select: { id: true, role: true }
@@ -182,6 +201,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('Kullanıcı doğrulandı:', { id: user.id, role: user.role });
         
         // Yeni makale oluştur
+        console.log('Makale oluşturuluyor...');
+        console.log('Makale verileri:', {
+          title,
+          contentLength: content?.length,
+          category: category || 'genel',
+          hasImage: !!image,
+          authorId: userId
+        });
+        
         const article = await prisma.article.create({
           data: {
             title,
@@ -201,6 +229,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       } catch (dbError) {
         console.error('Veritabanı hatası:', dbError);
+        
+        // Hata detaylarını göster
+        if (dbError instanceof Error) {
+          console.error('Hata mesajı:', dbError.message);
+          console.error('Hata stack:', dbError.stack);
+        }
+        
         return res.status(500).json({ 
           success: false,
           message: 'Makale oluşturulurken veritabanı hatası oluştu',
@@ -209,6 +244,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     } catch (error) {
       console.error('Genel hata:', error);
+      
+      // Hata detaylarını göster
+      if (error instanceof Error) {
+        console.error('Hata mesajı:', error.message);
+        console.error('Hata stack:', error.stack);
+      }
+      
       return res.status(500).json({ 
         success: false,
         message: 'Makale oluşturulurken hata oluştu',
