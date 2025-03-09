@@ -35,21 +35,50 @@ const AdminUsersPage = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
+      
+      // Kullanıcı oturum kontrolü
+      if (!user || !user.token) {
+        console.error('Kullanıcı oturumu bulunamadı veya token yok!', { user });
+        toast.error('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+        router.push('/giris');
+        return;
+      }
+      
+      console.log('Kullanıcılar getiriliyor...', { 
+        userRole: user.role,
+        tokenLength: user.token.length
+      });
+      
       const response = await fetch('/api/admin/users', {
         headers: {
-          'Authorization': `Bearer ${user?.token}`
+          'Authorization': `Bearer ${user.token}`
         }
+      });
+      
+      console.log('API yanıtı alındı:', { 
+        status: response.status, 
+        statusText: response.statusText 
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Yetkilendirme hatası: Geçersiz veya eksik token');
+          toast.error('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+          router.push('/giris');
+          throw new Error('Yetkilendirme başarısız: Geçersiz token');
+        }
+        
+        const errorText = await response.text();
+        console.error('API hatası:', { status: response.status, text: errorText });
         throw new Error('Kullanıcılar yüklenirken bir hata oluştu');
       }
 
       const data = await response.json();
+      console.log('Kullanıcılar başarıyla alındı', { count: data.users.length });
       setUsers(data.users);
     } catch (error) {
       console.error('Kullanıcılar yüklenirken hata:', error);
-      toast.error('Kullanıcılar yüklenirken bir hata oluştu');
+      toast.error(error instanceof Error ? error.message : 'Kullanıcılar yüklenirken bir hata oluştu');
     } finally {
       setIsLoading(false);
     }
