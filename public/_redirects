@@ -1,4 +1,4 @@
 # Netlify için özel yönlendirme kuralları
-/_next/static/*  /_next/static/:splat  200
-/api/*  /.netlify/functions/nextjs-server/api/:splat  200
-/*  /.netlify/functions/nextjs-server  200 
+/_next/*  /_next/:splat  200
+/api/*  /api/:splat  200
+/*  /index.html  200 
