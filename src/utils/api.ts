@@ -1,12 +1,12 @@
 // API istekleri için utility fonksiyonlar
 
 // API endpoint'ler için temel URL
-// Geliştirme ortamında: http://localhost:8888/.netlify/functions
-// Üretim ortamında: /.netlify/functions
+// Geliştirme ortamında: http://localhost:3005/api
+// Üretim ortamında: /api
 const API_BASE_URL = 
   typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:8888/.netlify/functions'
-    : '/.netlify/functions';
+    ? 'http://localhost:3005/api'
+    : '/api';
 
 // Kimlik doğrulama token'ını local storage'dan al
 export const getToken = () => {
@@ -44,7 +44,7 @@ const getHeaders = (includeAuth = true) => {
 };
 
 // Genel API istek fonksiyonu
-const apiRequest = async (
+export const apiRequest = async (
   endpoint: string, 
   method: string = 'GET', 
   data?: any, 

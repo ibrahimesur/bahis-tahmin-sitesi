@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
-import { getToken } from '../../utils/api';
+import { apiRequest } from '../../utils/api';
 
 const AddEditorPage = () => {
   const { user } = useAuth();
@@ -36,19 +36,8 @@ const AddEditorPage = () => {
       setIsSubmitting(true);
       setSearchPerformed(true);
       
-      // API yardımcı fonksiyonlarını kullanarak çağrı yapıyoruz
-      const response = await fetch(`/api/admin/users/search?email=${encodeURIComponent(email)}`, {
-        headers: {
-          'Authorization': `Bearer ${getToken()}`
-        }
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Kullanıcı aranırken bir hata oluştu');
-      }
-      
-      const data = await response.json();
+      // apiRequest fonksiyonunu kullanarak API çağrısı yapıyoruz
+      const data = await apiRequest(`admin/users/search?email=${encodeURIComponent(email)}`, 'GET');
       setSearchResults(data.users);
 
       // Kullanıcı bulunamadıysa bildir
@@ -68,25 +57,12 @@ const AddEditorPage = () => {
     try {
       setIsSubmitting(true);
       
-      // API yardımcı fonksiyonlarını kullanarak çağrı yapıyoruz
-      const response = await fetch('/api/admin/users/update-role', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getToken()}`
-        },
-        body: JSON.stringify({
-          userId,
-          newRole: 'editor'
-        })
+      // apiRequest fonksiyonunu kullanarak API çağrısı yapıyoruz
+      const data = await apiRequest('admin/users/update-role', 'POST', {
+        userId,
+        newRole: 'editor'
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Kullanıcı rolü güncellenirken bir hata oluştu');
-      }
-
-      const data = await response.json();
       toast.success(data.message || 'Kullanıcı başarıyla editör yapıldı');
       
       // Sonuçları güncelle
