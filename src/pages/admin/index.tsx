@@ -1,85 +1,99 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '../../contexts/AuthContext';
+import Layout from '../../components/Layout';
+import Link from 'next/link';
 
-interface AdminStats {
-  totalUsers: number;
-  totalPredictions: number;
-  totalEditors: number;
-}
+const AdminDashboard = () => {
+  const { user } = useAuth();
+  const router = useRouter();
 
-export default function AdminPage() {
-  const [stats] = useState<AdminStats>({
-    totalUsers: 1250,
-    totalPredictions: 450,
-    totalEditors: 8
-  });
+  useEffect(() => {
+    // Kullanıcı yüklendikten sonra kontrol et
+    if (user) {
+      if (user.role !== 'admin') {
+        router.push('/');
+        return;
+      }
+    }
+  }, [user, router]);
+
+  if (!user || user.role !== 'admin') {
+    return null; // Router zaten yönlendirme yapacak
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-8">Admin Paneli</h1>
+    <Layout>
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-6">Admin Paneli</h1>
 
-        {/* İstatistik Kartları */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700">Toplam Kullanıcı</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalUsers}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Kullanıcı Yönetimi Kartı */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Kullanıcı Yönetimi</h2>
+            <p className="text-gray-600 mb-4">
+              Tüm kullanıcıları görüntüleyin, düzenleyin ve rollerini değiştirin.
+            </p>
+            <Link href="/admin/users" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              Kullanıcıları Yönet
+            </Link>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700">Toplam Tahmin</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">{stats.totalPredictions}</p>
+
+          {/* Editör Yönetimi Kartı */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Editör Yönetimi</h2>
+            <p className="text-gray-600 mb-4">
+              Yeni editörler ekleyin ve mevcut editörleri yönetin.
+            </p>
+            <Link href="/admin/add-editor" className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+              Yeni Editör Ekle
+            </Link>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-700">Toplam Editör</h3>
-            <p className="text-3xl font-bold text-purple-600 mt-2">{stats.totalEditors}</p>
+
+          {/* İçerik Yönetimi Kartı */}
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">İçerik Yönetimi</h2>
+            <p className="text-gray-600 mb-4">
+              Makaleler, tahminler ve diğer içerikleri yönetin.
+            </p>
+            <Link href="/admin/content" className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+              İçerikleri Yönet
+            </Link>
           </div>
         </div>
 
-        {/* Hızlı İşlemler */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Hızlı İşlemler</h2>
-            <div className="space-y-4">
-              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
-                Yeni Editör Ekle
-              </button>
-              <button className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors">
-                Tahmin Onayla
-              </button>
-              <button className="w-full bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors">
-                Duyuru Ekle
-              </button>
+        <div className="mt-8 bg-white shadow rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Hızlı İşlemler</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h3 className="font-medium mb-2">Admin Yapma</h3>
+              <p className="text-sm text-gray-600 mb-2">
+                Bir kullanıcıyı doğrudan admin yapmak için:
+              </p>
+              <div className="bg-gray-100 p-2 rounded text-xs mb-4 overflow-x-auto">
+                <code>
+                  https://www.bankolab.com/.netlify/functions/make-admin?email=kullanici@email.com&secretKey=Mashurov2002
+                </code>
+              </div>
             </div>
-          </div>
-
-          {/* Son Aktiviteler */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Son Aktiviteler</h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <div>
-                  <p className="font-medium">Yeni Editör Eklendi</p>
-                  <p className="text-sm text-gray-500">Mustafa Eren Alkan</p>
-                </div>
-                <span className="text-sm text-gray-500">2 dk önce</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <div>
-                  <p className="font-medium">Tahmin Onaylandı</p>
-                  <p className="text-sm text-gray-500">GS vs FB maçı</p>
-                </div>
-                <span className="text-sm text-gray-500">5 dk önce</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <div>
-                  <p className="font-medium">Yeni Üye</p>
-                  <p className="text-sm text-gray-500">Mehmet Demir</p>
-                </div>
-                <span className="text-sm text-gray-500">10 dk önce</span>
+            
+            <div>
+              <h3 className="font-medium mb-2">Editör Yapma</h3>
+              <p className="text-sm text-gray-600 mb-2">
+                Bir kullanıcıyı doğrudan editör yapmak için:
+              </p>
+              <div className="bg-gray-100 p-2 rounded text-xs mb-4 overflow-x-auto">
+                <code>
+                  https://www.bankolab.com/.netlify/functions/make-editor?email=kullanici@email.com&secretKey=Mashurov2002
+                </code>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
-} 
+};
+
+export default AdminDashboard; 
