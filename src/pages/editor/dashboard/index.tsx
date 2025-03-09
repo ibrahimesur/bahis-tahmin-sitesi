@@ -4,6 +4,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import Layout from '../../../components/Layout';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { apiRequest } from '../../../utils/api';
 
 export default function EditorDashboard() {
   const router = useRouter();
@@ -35,18 +36,12 @@ export default function EditorDashboard() {
   const fetchEditorStats = async () => {
     try {
       setIsLoading(true);
-      // Editör istatistiklerini getir
-      const response = await fetch(`/api/editor/stats`, {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('İstatistikler yüklenemedi');
-      }
-
-      const data = await response.json();
+      console.log('Editör istatistikleri için istek yapılıyor...');
+      
+      // apiRequest fonksiyonunu kullanarak istek yap
+      const data = await apiRequest('editor/stats', 'GET');
+      console.log('Alınan editör istatistikleri:', data);
+      
       setStats(data);
     } catch (error) {
       console.error('İstatistikler yüklenirken hata:', error);

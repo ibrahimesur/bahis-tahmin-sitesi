@@ -4,6 +4,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import Layout from '../../../../components/Layout';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { apiRequest } from '../../../../utils/api';
 
 export default function NewPredictionPage() {
   const router = useRouter();
@@ -39,18 +40,13 @@ export default function NewPredictionPage() {
   const fetchMatches = async () => {
     try {
       setIsLoadingMatches(true);
-      const response = await fetch('/api/matches?status=upcoming', {
-        headers: {
-          'Authorization': `Bearer ${user?.token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Maçlar yüklenemedi');
-      }
-
-      const data = await response.json();
-      setMatches(data.matches);
+      console.log('Maçlar için istek yapılıyor...');
+      
+      // apiRequest fonksiyonunu kullanarak istek yap
+      const data = await apiRequest('matches?status=upcoming', 'GET');
+      console.log('Alınan maçlar:', data);
+      
+      setMatches(data.matches || []);
     } catch (error) {
       console.error('Maçlar yüklenirken hata:', error);
       toast.error('Maçlar yüklenemedi');
@@ -77,22 +73,12 @@ export default function NewPredictionPage() {
 
     try {
       setIsSubmitting(true);
+      console.log('Tahmin oluşturma isteği gönderiliyor:', formData);
       
-      const response = await fetch('/api/predictions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Tahmin oluşturulurken bir hata oluştu');
-      }
-
-      const data = await response.json();
+      // apiRequest fonksiyonunu kullanarak istek yap
+      const data = await apiRequest('predictions', 'POST', formData);
+      console.log('Tahmin oluşturma yanıtı:', data);
+      
       toast.success('Tahmin başarıyla oluşturuldu');
       router.push(`/editor/dashboard/predictions/${data.id}`);
     } catch (error) {

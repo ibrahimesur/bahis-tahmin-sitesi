@@ -4,6 +4,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import Layout from '../../../../components/Layout';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { apiRequest } from '../../../../utils/api';
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -45,22 +46,12 @@ export default function NewArticlePage() {
 
     try {
       setIsSubmitting(true);
+      console.log('Makale oluşturma isteği gönderiliyor:', formData);
       
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Makale oluşturulurken bir hata oluştu');
-      }
-
-      const data = await response.json();
+      // apiRequest fonksiyonunu kullanarak istek yap
+      const data = await apiRequest('articles', 'POST', formData);
+      console.log('Makale oluşturma yanıtı:', data);
+      
       toast.success('Makale başarıyla oluşturuldu');
       router.push(`/editor/dashboard/articles/${data.id}`);
     } catch (error) {
