@@ -31,11 +31,12 @@ interface Match {
 
 // Editör tipi tanımı
 interface Editor {
-  id: number;
+  id: string;
   name: string;
   image: string;
   successRate: number;
   followers: number;
+  contentCount: number;
 }
 
 // Tahmin tipi tanımı

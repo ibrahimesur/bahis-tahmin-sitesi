@@ -42,6 +42,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         bio: true,
         successRate: true,
         createdAt: true,
+        // Takipçi sayısını hesapla
+        _count: {
+          select: {
+            followers: true,
+            predictions: true,
+            articles: true
+          }
+        },
         // Şifre gibi hassas bilgileri dahil etme
         password: false
       },
@@ -53,17 +61,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('API: /api/editors - Editörler bulundu', { count: editors.length });
     
-    // Editörleri istemcinin beklediği formata dönüştür
-    const formattedEditors = editors.map(editor => ({
-      id: editor.id,
-      name: editor.username,
-      image: editor.avatar || '/images/default-avatar.png', // Avatar yoksa varsayılan resim
-      successRate: editor.successRate || 75, // Başarı oranı yoksa varsayılan değer
-      followers: Math.floor(Math.random() * 1000) + 500, // Şimdilik rastgele takipçi sayısı
-      bio: editor.bio || 'Profesyonel bahis tahmincisi'
-    }));
+    // Editörlerin tahmin başarı oranlarını hesapla
+    const editorsWithStats = await Promise.all(
+      editors.map(async (editor) => {
+        // Editörün tahminlerini getir
+        const predictions = await prisma.prediction.findMany({
+          where: {
+            authorId: editor.id,
+            status: {
+              in: ['won', 'lost'] // Sadece sonuçlanmış tahminler
+            }
+          },
+          select: {
+            status: true
+          }
+        });
+        
+        // Başarı oranını hesapla
+        const totalPredictions = predictions.length;
+        const wonPredictions = predictions.filter(p => p.status === 'won').length;
+        const successRate = totalPredictions > 0 
+          ? Math.round((wonPredictions / totalPredictions) * 100) 
+          : editor.successRate || 75; // Tahmin yoksa varsayılan değer veya mevcut değer
+        
+        // Takipçi sayısını al
+        const followers = editor._count.followers;
+        
+        // Toplam içerik sayısı (tahminler + makaleler)
+        const contentCount = editor._count.predictions + editor._count.articles;
+        
+        return {
+          id: editor.id,
+          name: editor.username,
+          image: editor.avatar || '/images/default-avatar.png', // Avatar yoksa varsayılan resim
+          successRate: successRate,
+          followers: followers,
+          bio: editor.bio || 'Profesyonel bahis tahmincisi',
+          contentCount: contentCount
+        };
+      })
+    );
 
-    return res.status(200).json({ editors: formattedEditors });
+    return res.status(200).json({ editors: editorsWithStats });
   } catch (error) {
     console.error('API: /api/editors - Sunucu hatası:', error);
     return res.status(500).json({

@@ -11,6 +11,7 @@ interface Editor {
   bio?: string;
   successRate: number;
   followers: number;
+  contentCount: number;
 }
 
 export default function EditorsPage() {
@@ -140,10 +141,14 @@ export default function EditorsPage() {
                           <p className="text-sm text-gray-500 mt-1">{editor.bio || 'Editör'}</p>
                         </div>
                       </div>
-                      <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-4">
+                      <div className="mt-6 grid grid-cols-3 gap-4 border-t pt-4">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-gray-900">%{editor.successRate}</div>
                           <div className="text-xs text-gray-500">Başarı</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-gray-900">{editor.contentCount}</div>
+                          <div className="text-xs text-gray-500">İçerik</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-gray-900">{editor.followers}</div>
