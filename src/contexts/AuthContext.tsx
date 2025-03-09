@@ -21,19 +21,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Sayfa yüklendiğinde localStorage'dan kullanıcı bilgisini al
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    try {
+      const storedUser = localStorage.getItem('user');
+      console.log('AuthContext: localStorage kontrol ediliyor', { 
+        userExists: !!storedUser 
+      });
+      
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        console.log('AuthContext: Kullanıcı bilgisi alındı', { 
+          id: userData.id,
+          role: userData.role,
+          hasToken: !!userData.token,
+          tokenLength: userData.token ? userData.token.length : 0
+        });
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('AuthContext: localStorage okuma hatası', error);
+      // Bozuk veriyi temizle
+      localStorage.removeItem('user');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const login = (userData: AuthUser) => {
+    console.log('AuthContext: Kullanıcı giriş yapıyor', { 
+      id: userData.id,
+      role: userData.role,
+      hasToken: !!userData.token
+    });
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const logout = () => {
+    console.log('AuthContext: Kullanıcı çıkış yapıyor');
     setUser(null);
     localStorage.removeItem('user');
   };
