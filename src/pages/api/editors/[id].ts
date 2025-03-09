@@ -19,12 +19,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { id } = req.query;
+    console.log('Editör detayı isteniyor:', { id });
 
     if (!id || typeof id !== 'string') {
+      console.error('Geçersiz editör ID:', id);
       return res.status(400).json({ message: 'Geçersiz editör ID' });
     }
 
     // Editör bilgilerini getir
+    console.log('Veritabanından editör bilgileri alınıyor:', { id });
     const editor = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -48,20 +51,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
+    console.log('Veritabanı sorgusu sonucu:', { 
+      found: !!editor, 
+      role: editor?.role,
+      username: editor?.username
+    });
+
     if (!editor) {
+      console.error('Editör bulunamadı:', { id });
       return res.status(404).json({ message: 'Editör bulunamadı' });
     }
 
-    if (editor.role !== 'EDITOR') {
+    // Rol kontrolü - büyük/küçük harf duyarsız kontrol
+    if (editor.role.toUpperCase() !== 'EDITOR') {
+      console.error('Kullanıcı bir editör değil:', { id, role: editor.role });
       return res.status(404).json({ message: 'Kullanıcı bir editör değil' });
     }
 
     // Başarı oranını hesapla
     const totalPredictions = editor.predictions.length;
-    const wonPredictions = editor.predictions.filter(p => p.status === 'WON').length;
+    const wonPredictions = editor.predictions.filter(p => p.status.toUpperCase() === 'WON').length;
     const successRate = totalPredictions > 0 
       ? Math.round((wonPredictions / totalPredictions) * 100) 
       : 0;
+
+    console.log('Başarı oranı hesaplandı:', { 
+      totalPredictions, 
+      wonPredictions, 
+      successRate 
+    });
 
     // İçerik sayısını hesapla (tahminler + makaleler)
     const contentCount = editor._count.predictions + editor._count.articles;
@@ -77,9 +95,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       contentCount
     };
 
+    console.log('Editör bilgileri başarıyla alındı:', { 
+      id, 
+      name: editor.username,
+      followers: editor._count.followers,
+      contentCount
+    });
+
     return res.status(200).json(formattedEditor);
   } catch (error) {
     console.error('Editör detayları alınırken hata:', error);
-    return res.status(500).json({ message: 'Sunucu hatası' });
+    return res.status(500).json({ 
+      message: 'Sunucu hatası',
+      error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+    });
   }
 } 
