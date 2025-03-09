@@ -27,7 +27,7 @@ const prismaClientSingleton = () => {
           url: databaseUrl
         }
       },
-      log: ['error', 'warn'] as Prisma.LogLevel[],
+      log: ['error', 'warn', 'query'] as Prisma.LogLevel[],
     };
     
     // Netlify ortamında ek yapılandırma
@@ -41,7 +41,18 @@ const prismaClientSingleton = () => {
     
     // Bağlantıyı test et
     prismaClient.$connect()
-      .then(() => console.log('Veritabanına bağlantı başarılı'))
+      .then(() => {
+        console.log('Veritabanına bağlantı başarılı');
+        
+        // Test sorgusu çalıştır
+        return prismaClient.$queryRaw`SELECT 1 as test`
+          .then((result) => {
+            console.log('Test sorgusu başarılı:', result);
+          })
+          .catch((queryError) => {
+            console.error('Test sorgusu hatası:', queryError);
+          });
+      })
       .catch(err => {
         console.error('Veritabanı bağlantı hatası:', err);
         // Bağlantı hatası durumunda yeniden deneme mekanizması
@@ -53,6 +64,7 @@ const prismaClientSingleton = () => {
               console.error('Veritabanı bağlantı hatası (yeniden deneme):', retryErr);
               console.log('Bağlantı bilgileri:');
               console.log('- DATABASE_URL tanımlı:', !!process.env.DATABASE_URL);
+              console.log('- DATABASE_URL uzunluğu:', process.env.DATABASE_URL?.length);
               console.log('- NODE_ENV:', process.env.NODE_ENV);
               console.log('- Çalışma ortamı:', process.env.NETLIFY ? 'Netlify' : 'Lokal/Diğer');
             });
