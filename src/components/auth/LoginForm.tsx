@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { login } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { toast } from 'react-hot-toast';
 
 const LoginForm = () => {
   const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -26,9 +27,12 @@ const LoginForm = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setDebugInfo(null);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      console.log('LoginForm: Giriş denemesi başlatılıyor', { email: formData.email });
+      
+      const response = await fetch('/api/auth-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,32 +40,70 @@ const LoginForm = () => {
         body: JSON.stringify({ email: formData.email, password: formData.password }),
       });
 
-      const data = await response.json();
+      console.log('LoginForm: API yanıtı alındı', { 
+        status: response.status, 
+        statusText: response.statusText 
+      });
+      
+      // Yanıt içeriğini al
+      const responseText = await response.text();
+      let data;
+      
+      try {
+        // JSON olarak ayrıştırmayı dene
+        data = JSON.parse(responseText);
+        console.log('LoginForm: Yanıt verisi', { 
+          success: data.success, 
+          hasUser: !!data.user, 
+          hasToken: !!data.token 
+        });
+      } catch (parseError) {
+        console.error('LoginForm: JSON ayrıştırma hatası', parseError);
+        setDebugInfo(`JSON ayrıştırma hatası: ${responseText}`);
+        throw new Error('Sunucu yanıtı geçersiz format içeriyor');
+      }
 
       if (!response.ok) {
+        console.error('LoginForm: Başarısız yanıt', data);
+        setDebugInfo(JSON.stringify(data, null, 2));
         throw new Error(data.message || 'Giriş yapılırken bir hata oluştu');
       }
 
+      // Kullanıcı bilgilerini ve token'ı kontrol et
+      if (!data.user || !data.token) {
+        console.error('LoginForm: Eksik kullanıcı bilgisi veya token', data);
+        setDebugInfo(JSON.stringify(data, null, 2));
+        throw new Error('Sunucu yanıtında kullanıcı bilgisi veya token eksik');
+      }
+
       // Kullanıcı bilgilerini ve token'ı kaydet
-      login({
+      const userData = {
         ...data.user,
         token: data.token
+      };
+      
+      console.log('LoginForm: Kullanıcı giriş yapıyor', { 
+        id: userData.id, 
+        role: userData.role,
+        tokenLength: userData.token.length
       });
+      
+      login(userData);
 
       // Başarılı giriş mesajı
       toast.success('Giriş başarılı!');
       
       // Kullanıcı rolüne göre yönlendirme
-      if (data.user.role === 'editor') {
+      if (userData.role === 'editor') {
         router.push('/editor/dashboard');
-      } else if (data.user.role === 'admin') {
+      } else if (userData.role === 'admin') {
         router.push('/admin');
       } else {
         // Normal kullanıcı için ana sayfaya yönlendir
         router.push('/');
       }
     } catch (err) {
-      console.error('Giriş hatası:', err);
+      console.error('LoginForm: Giriş hatası', err);
       setError(err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu');
       toast.error(err instanceof Error ? err.message : 'Giriş yapılırken bir hata oluştu');
     } finally {
