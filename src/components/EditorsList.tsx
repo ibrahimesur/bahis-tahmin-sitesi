@@ -1,9 +1,16 @@
 import Link from 'next/link';
-import { User } from '../types';
+
+// User tipini doğrudan tanımlıyoruz
+interface Editor {
+  id: string;
+  username: string;
+  successRate?: number;
+  avatar?: string;
+}
 
 export default function EditorsList() {
   // Örnek editör verileri
-  const editors: Partial<User>[] = [
+  const editors: Editor[] = [
     {
       id: '1',
       username: 'Ahmet Yılmaz',
@@ -29,7 +36,7 @@ export default function EditorsList() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Editörlerimiz</h2>
         <Link 
-          href="/editors" 
+          href="/tahminler" 
           className="text-sm text-blue-600 hover:text-blue-800"
         >
           Tümünü Gör

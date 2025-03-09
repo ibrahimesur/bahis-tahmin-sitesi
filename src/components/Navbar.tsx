@@ -18,7 +18,7 @@ export default function Navbar({ children }: NavbarProps) {
     { name: 'Ana Sayfa', href: '/' },
     { name: 'Maçlar', href: '/matches' },
     { name: 'Puan Durumu', href: '/standings' },
-    { name: 'Editörler', href: '/editors' }
+    { name: 'Tahminler', href: '/tahminler' }
   ];
 
   // Editör rolüne sahip kullanıcılar için ek menü öğeleri

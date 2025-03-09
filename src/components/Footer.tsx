@@ -31,8 +31,8 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/editors" className="text-gray-300 hover:text-white">
-                  Editörler
+                <Link href="/tahminler" className="text-gray-300 hover:text-white">
+                  Tahminler
                 </Link>
               </li>
             </ul>

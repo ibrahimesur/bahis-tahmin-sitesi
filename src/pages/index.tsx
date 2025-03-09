@@ -334,7 +334,7 @@ export default function HomePage() {
                 <div className="space-y-4 flex-grow overflow-y-auto pr-2">
                   {editors.map((editor) => (
                     <Link href={`/editors/${editor.id}`} key={editor.id}>
-                      <div className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer">
+                      <div className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
                         <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
                           <img 
                             src={editor.image} 
@@ -359,9 +359,9 @@ export default function HomePage() {
                   ))}
                   
                   <div className="text-center mt-4">
-                    <Link href="/editors">
+                    <Link href="/tahminler">
                       <span className="text-blue-600 hover:text-blue-800 font-medium">
-                        Tüm Editörleri Gör →
+                        Tüm Tahminleri Gör →
                       </span>
                     </Link>
                   </div>
@@ -448,7 +448,7 @@ export default function HomePage() {
                   ))}
                   
                   <div className="text-center mt-4">
-                    <Link href="/predictions">
+                    <Link href="/tahminler">
                       <span className="text-blue-600 hover:text-blue-800 font-medium">
                         Tüm Tahminleri Gör →
                       </span>
