@@ -21,6 +21,14 @@ export default function Navbar({ children }: NavbarProps) {
     { name: 'Editörler', href: '/editors' }
   ];
 
+  // Editör rolüne sahip kullanıcılar için ek menü öğeleri
+  const editorNavigation = user && (user.role === 'editor' || user.role === 'admin') ? [
+    { name: 'Yayın Yönetimi', href: '/editor/dashboard' }
+  ] : [];
+
+  // Tüm navigasyon öğelerini birleştir
+  const allNavigation = [...navigation, ...editorNavigation];
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
       {/* Dikey Navbar - Sol Tarafta */}
@@ -44,12 +52,12 @@ export default function Navbar({ children }: NavbarProps) {
 
           {/* Dikey Navigasyon Menüsü */}
           <div className="flex flex-col space-y-4">
-            {navigation.map((item) => (
+            {allNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 className={`flex items-center px-4 py-3 text-base font-medium rounded-md ${
-                  router.pathname === item.href
+                  router.pathname === item.href || router.pathname.startsWith(`${item.href}/`)
                     ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
@@ -131,12 +139,12 @@ export default function Navbar({ children }: NavbarProps) {
       <div className={`${isMenuOpen ? 'block' : 'hidden'} md:hidden fixed inset-0 z-50 bg-white pt-16`}>
         <div className="p-4">
           <div className="space-y-2">
-            {navigation.map((item) => (
+            {allNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 className={`block px-4 py-3 text-base font-medium rounded-md ${
-                  router.pathname === item.href
+                  router.pathname === item.href || router.pathname.startsWith(`${item.href}/`)
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
