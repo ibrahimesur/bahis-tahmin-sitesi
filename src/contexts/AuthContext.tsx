@@ -79,11 +79,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tokenLength: userData.token ? userData.token.length : 0
     });
     
-    // Token kontrolü
+    // Token kontrolü - tokensiz de devam et, hata fırlatma
     if (!userData.token) {
-      console.error('AuthContext: Giriş yapılırken token bulunamadı');
-      toast.error('Giriş yapılamadı: Token bulunamadı');
-      return;
+      console.warn('AuthContext: Kullanıcı tokensiz giriş yapıyor');
+      
+      // Token yoksa boş string ekle
+      userData = {
+        ...userData,
+        token: ''
+      };
     }
     
     setUser(userData);

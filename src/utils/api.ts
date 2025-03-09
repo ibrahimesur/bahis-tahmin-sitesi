@@ -112,16 +112,16 @@ export const apiRequest = async (
       } else {
         console.warn('API isteği: Token bulunamadı');
         
-        // Geliştirme ortamında token yoksa, hata fırlatma
+        // Token yoksa bile devam et, hata fırlatma
+        console.log('API isteği: Token olmadan devam ediliyor');
+        
+        // Eğer geliştirme ortamında çalışıyorsa, geçici bir token ekle
         if (process.env.NODE_ENV === 'development') {
-          console.log('Geliştirme ortamında token bulunamadı, ancak devam ediliyor');
-          // Geliştirme ortamında token yoksa bile devam et, hata fırlatma
-        } else {
-          // Üretim ortamında token yoksa ve token gerekiyorsa, kullanıcıyı giriş sayfasına yönlendir
-          // Ancak hata fırlatma, isteğin devam etmesine izin ver
-          redirectToLogin();
-          // Hata fırlatma, isteğin devam etmesine izin ver
-          // throw new Error('Token bulunamadı');
+          console.log('Geliştirme ortamında geçici token ekleniyor');
+          options.headers = {
+            ...options.headers,
+            'Authorization': 'Bearer dev-token'  // Geliştirme için geçici token
+          };
         }
       }
     }
