@@ -2,115 +2,84 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log('API: /api/editors/[id] - İstek alındı', {
-    method: req.method,
-    query: req.query
-  });
-
-  // CORS için header ayarları
+  // CORS başlıkları
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // OPTIONS isteği için CORS yanıtı
+  // OPTIONS isteği için hızlı yanıt
   if (req.method === 'OPTIONS') {
-    console.log('API: /api/editors/[id] - OPTIONS isteği yanıtlandı');
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
-  // Sadece GET isteklerine izin ver
+  // Sadece GET isteklerini işle
   if (req.method !== 'GET') {
-    console.log(`API: /api/editors/[id] - Desteklenmeyen metod: ${req.method}`);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   try {
     const { id } = req.query;
-    
+
     if (!id || typeof id !== 'string') {
-      console.error('API: /api/editors/[id] - Geçersiz ID');
       return res.status(400).json({ message: 'Geçersiz editör ID' });
     }
 
-    console.log('API: /api/editors/[id] - Editör getiriliyor', { id });
-    
-    // Editörü getir
+    // Editör bilgilerini getir
     const editor = await prisma.user.findUnique({
-      where: {
-        id,
-        role: 'editor'
-      },
+      where: { id },
       select: {
         id: true,
         username: true,
-        email: true,
-        role: true,
         avatar: true,
         bio: true,
-        successRate: true,
-        createdAt: true,
-        // Takipçi sayısını hesapla
+        role: true,
         _count: {
           select: {
             followers: true,
             predictions: true,
-            articles: true
+            articles: true,
           }
         },
-        // Şifre gibi hassas bilgileri dahil etme
-        password: false
+        predictions: {
+          select: {
+            status: true,
+          }
+        }
       }
     });
 
     if (!editor) {
-      console.error('API: /api/editors/[id] - Editör bulunamadı', { id });
       return res.status(404).json({ message: 'Editör bulunamadı' });
     }
 
-    // Editörün tahmin başarı oranını hesapla
-    const predictions = await prisma.prediction.findMany({
-      where: {
-        authorId: editor.id,
-        status: {
-          in: ['won', 'lost'] // Sadece sonuçlanmış tahminler
-        }
-      },
-      select: {
-        status: true
-      }
-    });
-    
+    if (editor.role !== 'EDITOR') {
+      return res.status(404).json({ message: 'Kullanıcı bir editör değil' });
+    }
+
     // Başarı oranını hesapla
-    const totalPredictions = predictions.length;
-    const wonPredictions = predictions.filter(p => p.status === 'won').length;
+    const totalPredictions = editor.predictions.length;
+    const wonPredictions = editor.predictions.filter(p => p.status === 'WON').length;
     const successRate = totalPredictions > 0 
       ? Math.round((wonPredictions / totalPredictions) * 100) 
-      : editor.successRate || 75; // Tahmin yoksa varsayılan değer veya mevcut değer
-    
-    // Takipçi sayısını al
-    const followers = editor._count.followers;
-    
-    // Toplam içerik sayısı (tahminler + makaleler)
+      : 0;
+
+    // İçerik sayısını hesapla (tahminler + makaleler)
     const contentCount = editor._count.predictions + editor._count.articles;
-    
+
+    // Yanıt formatını hazırla
     const formattedEditor = {
       id: editor.id,
       name: editor.username,
-      image: editor.avatar || '/images/default-avatar.png', // Avatar yoksa varsayılan resim
-      bio: editor.bio || 'Profesyonel bahis tahmincisi',
-      successRate: successRate,
-      followers: followers,
-      contentCount: contentCount
+      image: editor.avatar,
+      bio: editor.bio,
+      successRate,
+      followers: editor._count.followers,
+      contentCount
     };
 
-    console.log('API: /api/editors/[id] - Editör bulundu', { id, name: editor.username });
     return res.status(200).json(formattedEditor);
   } catch (error) {
-    console.error('API: /api/editors/[id] - Sunucu hatası:', error);
-    return res.status(500).json({
-      message: 'Sunucu hatası',
-      error: process.env.NODE_ENV !== 'production' ? String(error) : undefined
-    });
+    console.error('Editör detayları alınırken hata:', error);
+    return res.status(500).json({ message: 'Sunucu hatası' });
   }
 } 

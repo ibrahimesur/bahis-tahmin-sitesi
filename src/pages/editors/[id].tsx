@@ -6,49 +6,38 @@ import Image from 'next/image';
 import { toast } from 'react-hot-toast';
 import { apiRequest } from '../../utils/api';
 
-interface Article {
+interface Editor {
   id: string;
-  title: string;
-  content: string;
+  name: string;
   image?: string;
-  category: string;
-  createdAt: string;
-  likes: number;
-}
-
-interface EditorDetail {
-  id: string;
-  username: string;
-  avatar?: string;
   bio?: string;
   successRate: number;
-  articles: Article[];
   followers: number;
-  isFollowing: boolean;
+  contentCount: number;
 }
 
 export default function EditorDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
-  const [editor, setEditor] = useState<EditorDetail | null>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      fetchEditor();
+    if (id && typeof id === 'string') {
+      fetchEditor(id);
       if (user) {
-        checkFollowStatus();
+        checkFollowStatus(id);
       }
     }
   }, [id, user]);
 
-  const fetchEditor = async () => {
+  const fetchEditor = async (editorId: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/editors/${id}`);
+      const response = await fetch(`/api/editors/${editorId}`);
       if (!response.ok) throw new Error('Editör bilgileri yüklenemedi');
       const data = await response.json();
       setEditor(data);
@@ -60,11 +49,11 @@ export default function EditorDetailPage() {
     }
   };
 
-  const checkFollowStatus = async () => {
+  const checkFollowStatus = async (editorId: string) => {
     if (!user || !user.token) return;
     
     try {
-      const response = await fetch(`/api/editors/is-following?editorId=${id}`, {
+      const response = await fetch(`/api/editors/is-following?editorId=${editorId}`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         }
@@ -117,24 +106,6 @@ export default function EditorDetailPage() {
     }
   };
 
-  if (!user) {
-    return (
-      <Layout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="max-w-md w-full bg-white shadow rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Bu Sayfayı Görüntülemek İçin Giriş Yapın
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Editörün yazılarını okumak için üye olun veya giriş yapın.
-            </p>
-            {/* ... giriş/kayıt butonları ... */}
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   if (isLoading) {
     return (
       <Layout>
@@ -161,111 +132,114 @@ export default function EditorDetailPage() {
     );
   }
 
-  if (!editor) return null;
+  if (!editor) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Editör Bulunamadı</h1>
+              <p className="text-gray-600 mb-6">Aradığınız editör bulunamadı veya artık mevcut değil.</p>
+              <button
+                onClick={() => router.push('/editors')}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Tüm Editörlere Dön
+              </button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Editör adı ve diğer bilgilerin güvenli bir şekilde kullanılması
+  const editorName = editor.name || '';
+  const editorBio = editor.bio || 'Profesyonel bahis tahmincisi';
+  const editorImage = editor.image || '';
+  const editorFirstLetter = editorName.length > 0 ? editorName.charAt(0).toUpperCase() : '';
 
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Editör Profili */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <div className="flex items-center space-x-6">
-              <div className="relative w-24 h-24">
-                {editor.avatar ? (
-                  <Image
-                    src={editor.avatar}
-                    alt={editor.username}
-                    fill
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
-                    <span className="text-4xl text-gray-500">
-                      {editor.username.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900">{editor.username}</h1>
-                <p className="text-gray-600 mt-2">{editor.bio || 'Editör'}</p>
-                <div className="flex items-center space-x-6 mt-4">
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">%{editor.successRate}</div>
-                    <div className="text-sm text-gray-500">Başarı</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{editor.articles.length}</div>
-                    <div className="text-sm text-gray-500">Yazı</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{editor.followers}</div>
-                    <div className="text-sm text-gray-500">Takipçi</div>
-                  </div>
-                  <button
-                    onClick={handleFollowToggle}
-                    disabled={isProcessing}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      isFollowing
-                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                  >
-                    {isProcessing ? (
-                      <span className="flex items-center">
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        İşleniyor...
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {/* Editör Başlık Bölümü */}
+            <div className="p-6 sm:p-8 bg-gradient-to-r from-blue-500 to-indigo-600">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left">
+                <div className="relative w-32 h-32 flex-shrink-0 mb-4 sm:mb-0 sm:mr-6">
+                  {editorImage ? (
+                    <Image
+                      src={editorImage}
+                      alt={editorName}
+                      fill
+                      className="rounded-full object-cover border-4 border-white"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center border-4 border-white">
+                      <span className="text-4xl text-gray-500">
+                        {editorFirstLetter}
                       </span>
-                    ) : isFollowing ? (
-                      'Takibi Bırak'
-                    ) : (
-                      'Takip Et'
-                    )}
-                  </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-white mb-2">{editorName}</h1>
+                  <p className="text-blue-100 mb-4">{editorBio}</p>
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-4 mb-4">
+                    <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2 text-white">
+                      <div className="text-xl font-bold">%{editor.successRate}</div>
+                      <div className="text-xs">Başarı Oranı</div>
+                    </div>
+                    <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2 text-white">
+                      <div className="text-xl font-bold">{editor.contentCount}</div>
+                      <div className="text-xs">İçerik</div>
+                    </div>
+                    <div className="bg-white bg-opacity-20 rounded-lg px-4 py-2 text-white">
+                      <div className="text-xl font-bold">{editor.followers}</div>
+                      <div className="text-xs">Takipçi</div>
+                    </div>
+                  </div>
+                  
+                  {/* Takip Et Butonu */}
+                  {user && user.id !== editor.id && (
+                    <button
+                      onClick={handleFollowToggle}
+                      disabled={isProcessing}
+                      className={`mt-4 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm ${
+                        isFollowing
+                          ? 'text-blue-700 bg-white hover:bg-blue-50'
+                          : 'text-white bg-blue-700 hover:bg-blue-800'
+                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200`}
+                    >
+                      {isProcessing ? (
+                        <span className="flex items-center">
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          İşleniyor...
+                        </span>
+                      ) : isFollowing ? (
+                        'Takibi Bırak'
+                      ) : (
+                        'Takip Et'
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Yazılar */}
-          <div className="space-y-6">
-            {editor.articles.map((article) => (
-              <div key={article.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                {article.image && (
-                  <div className="relative h-48 w-full">
-                    <Image
-                      src={article.image}
-                      alt={article.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium text-blue-600">{article.category}</span>
-                    <span className="text-sm text-gray-500">
-                      {new Date(article.createdAt).toLocaleDateString('tr-TR')}
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">{article.title}</h2>
-                  <p className="text-gray-600 line-clamp-3">{article.content}</p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <button className="text-gray-500 hover:text-gray-700">
-                        <span>👍 {article.likes}</span>
-                      </button>
-                    </div>
-                    <button className="text-blue-600 hover:text-blue-700 font-medium">
-                      Devamını Oku
-                    </button>
-                  </div>
-                </div>
+            {/* Editör İçerik Bölümü */}
+            <div className="p-6 sm:p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Son Tahminler</h2>
+              
+              {/* Burada editörün tahminleri listelenecek */}
+              <div className="bg-gray-100 rounded-lg p-6 text-center">
+                <p className="text-gray-600">Henüz tahmin bulunmamaktadır.</p>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
