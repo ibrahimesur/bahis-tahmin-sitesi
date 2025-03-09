@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Content-Type', 'application/json');
 
   // OPTIONS isteği için hızlı yanıt
   if (req.method === 'OPTIONS') {
@@ -42,44 +43,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const pageSize = parseInt(limit as string, 10);
       const skip = (pageNumber - 1) * pageSize;
       
-      // Toplam makale sayısını al
-      const totalCount = await prisma.article.count({ where });
-      
-      // Makaleleri getir
-      const articles = await prisma.article.findMany({
-        where,
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              avatar: true,
-              role: true
+      try {
+        // Toplam makale sayısını al
+        const totalCount = await prisma.article.count({ where });
+        
+        // Makaleleri getir
+        const articles = await prisma.article.findMany({
+          where,
+          include: {
+            author: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+                role: true
+              }
             }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          },
+          skip,
+          take: pageSize
+        });
+        
+        // Sayfalama bilgilerini ekle
+        const totalPages = Math.ceil(totalCount / pageSize);
+        
+        return res.status(200).json({
+          articles,
+          pagination: {
+            total: totalCount,
+            page: pageNumber,
+            pageSize,
+            totalPages
           }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip,
-        take: pageSize
-      });
-      
-      // Sayfalama bilgilerini ekle
-      const totalPages = Math.ceil(totalCount / pageSize);
-      
-      return res.status(200).json({
-        articles,
-        pagination: {
-          total: totalCount,
-          page: pageNumber,
-          pageSize,
-          totalPages
-        }
-      });
+        });
+      } catch (dbError) {
+        console.error('Makaleler listelenirken veritabanı hatası:', dbError);
+        return res.status(500).json({ 
+          message: 'Makaleler listelenirken veritabanı hatası oluştu',
+          error: process.env.NODE_ENV === 'development' ? String(dbError) : undefined
+        });
+      }
     } catch (error) {
       console.error('Makaleler listelenirken hata:', error);
-      return res.status(500).json({ message: 'Sunucu hatası' });
+      return res.status(500).json({ 
+        message: 'Sunucu hatası',
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      });
     }
   }
   
@@ -119,7 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       const { title, content, category, image } = req.body;
-      console.log('Makale oluşturma isteği:', { title, category });
+      console.log('Makale oluşturma isteği:', { title, category, contentLength: content?.length });
       
       // Zorunlu alanları kontrol et
       if (!title || !content) {
@@ -127,6 +139,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       try {
+        // Kullanıcının varlığını kontrol et
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true }
+        });
+        
+        if (!user) {
+          console.error('Kullanıcı bulunamadı:', { userId });
+          return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+        }
+        
         // Yeni makale oluştur
         const article = await prisma.article.create({
           data: {
