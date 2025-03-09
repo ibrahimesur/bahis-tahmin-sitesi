@@ -63,7 +63,17 @@ export default function Navbar({ children }: NavbarProps) {
           <div className="mt-8 pt-6 border-t border-gray-200">
             {user ? (
               <div className="space-y-4">
-                <span className="block px-4 py-2 text-base font-medium text-gray-700">{user.username}</span>
+                <Link 
+                  href="/profile" 
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  <div className="flex items-center">
+                    <span>{user.username}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </div>
+                </Link>
                 <button
                   onClick={logout}
                   className="w-full flex items-center px-4 py-3 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-md"
@@ -139,7 +149,18 @@ export default function Navbar({ children }: NavbarProps) {
           <div className="mt-6 pt-6 border-t border-gray-200">
             {user ? (
               <div className="space-y-2">
-                <span className="block px-4 py-2 text-base font-medium text-gray-700">{user.username}</span>
+                <Link 
+                  href="/profile" 
+                  className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <div className="flex items-center">
+                    <span>{user.username}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </div>
+                </Link>
                 <button
                   onClick={() => {
                     logout();
@@ -172,9 +193,11 @@ export default function Navbar({ children }: NavbarProps) {
         </div>
       </div>
 
-      {/* Ana İçerik Alanı */}
-      <div className="flex-1">
-        {children}
+      {/* Ana İçerik */}
+      <div className="flex-1 md:ml-64">
+        <main className="min-h-screen">
+          {children}
+        </main>
       </div>
     </div>
   );

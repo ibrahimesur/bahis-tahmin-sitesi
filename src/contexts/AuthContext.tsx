@@ -6,13 +6,15 @@ interface AuthContextType {
   login: (user: AuthUser) => void;
   logout: () => void;
   isLoading: boolean;
+  updateUser: (updatedUser: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   login: () => {},
   logout: () => {},
-  isLoading: true
+  isLoading: true,
+  updateUser: () => {}
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -62,8 +64,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('user');
   };
 
+  const updateUser = (updatedUser: AuthUser) => {
+    console.log('AuthContext: Kullanıcı bilgileri güncelleniyor', {
+      id: updatedUser.id,
+      username: updatedUser.username
+    });
+    setUser(updatedUser);
+    
+    // localStorage'daki kullanıcı bilgilerini güncelle
+    if (updatedUser) {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
