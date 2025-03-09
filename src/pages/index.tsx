@@ -73,11 +73,43 @@ export default function HomePage() {
     // Maçları getir
     const fetchMatches = async () => {
       try {
-        const res = await fetch('/api/matches');
+        setLoading(true);
+        console.log('Maçlar için API isteği yapılıyor...');
+        
+        // API isteğini try-catch içinde yap ve zaman aşımı ekle
+        const res = await fetch('/api/matches', { 
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: AbortSignal.timeout(10000) // 10 saniye zaman aşımı
+        });
+        
+        if (!res.ok) {
+          console.error('Maçlar için API yanıtı başarısız:', { status: res.status, statusText: res.statusText });
+          throw new Error('Maçlar alınamadı: ' + res.statusText);
+        }
+        
+        // API yanıtını kontrol et
         const data = await res.json();
-        setMatches(data.slice(0, 5)); // İlk 5 maçı al
+        console.log('Maçlar için API yanıtı alındı:', { count: data?.length || 0 });
+        
+        // Veriyi kontrol et
+        if (!data || !Array.isArray(data)) {
+          console.error('Beklenmeyen veri formatı:', data);
+          // Veri dizisi değilse boş dizi kullan
+          setMatches([]);
+          return;
+        }
+        
+        // İlk 5 maçı al
+        const matchesToShow = data.slice(0, 5);
+        console.log('Gösterilecek maçlar:', matchesToShow);
+        setMatches(matchesToShow);
       } catch (error) {
         console.error('Maçlar yüklenirken hata oluştu:', error);
+        // Hata durumunda boş dizi ata
+        setMatches([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -197,7 +229,6 @@ export default function HomePage() {
     fetchMatches();
     fetchEditors(); // Editörleri getir
     loadSampleData();
-    setLoading(false);
   }, []);
 
   // Tarih formatını düzenleyen yardımcı fonksiyon

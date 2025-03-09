@@ -56,6 +56,15 @@ const LoginPage: NextPage = () => {
       console.log('JSON yanıtı başarıyla ayrıştırıldı:', JSON.stringify(data).substring(0, 100) + '...');
       console.log('Giriş başarılı, kullanıcı bilgileri alındı');
       
+      // Token kontrolü yap
+      if (!data.token) {
+        console.error('API yanıtında token bulunamadı:', JSON.stringify(data));
+        toast.error('Giriş yapılamadı: Sunucudan token alınamadı');
+        throw new Error('API yanıtında token bulunamadı');
+      }
+      
+      console.log('Token alındı:', { tokenLength: data.token.length });
+      
       // Token bilgisini kullanıcı nesnesine ekle
       const userData = {
         ...data.user,
@@ -68,6 +77,14 @@ const LoginPage: NextPage = () => {
         hasToken: !!userData.token,
         tokenLength: userData.token ? userData.token.length : 0
       });
+      
+      // LocalStorage'a ham veriyi kaydet
+      try {
+        localStorage.setItem('rawLoginResponse', JSON.stringify(data));
+        console.log('Ham giriş yanıtı localStorage\'a kaydedildi');
+      } catch (storageError) {
+        console.error('localStorage\'a ham veri kaydedilirken hata:', storageError);
+      }
       
       // Kullanıcı bilgilerini AuthContext'e kaydet
       login(userData);
