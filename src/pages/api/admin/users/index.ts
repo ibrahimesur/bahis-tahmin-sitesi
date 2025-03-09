@@ -8,7 +8,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     query: req.query,
     headers: {
       authorization: req.headers.authorization ? 'Bearer ***' : 'Yok',
-      'content-type': req.headers['content-type']
+      'content-type': req.headers['content-type'],
+      'origin': req.headers.origin || 'Yok',
+      'referer': req.headers.referer || 'Yok'
     }
   });
 
@@ -16,6 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   // OPTIONS isteği için CORS yanıtı
   if (req.method === 'OPTIONS') {
@@ -33,12 +36,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Token doğrulama
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.error('API: /api/admin/users - Token bulunamadı');
+    console.error('API: /api/admin/users - Token bulunamadı', { authHeader });
     return res.status(401).json({ message: 'Yetkilendirme başarısız: Token bulunamadı' });
   }
 
   const token = authHeader.split(' ')[1];
-  console.log('API: /api/admin/users - Token alındı', { tokenLength: token.length });
+  console.log('API: /api/admin/users - Token alındı', { tokenLength: token.length, tokenStart: token.substring(0, 10) });
   
   let decodedToken;
 
