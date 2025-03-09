@@ -1,53 +1,37 @@
 // API istekleri için utility fonksiyonlar
 
 // API endpoint'ler için temel URL
-// Geliştirme ortamında: http://localhost:3005/api
+// Geliştirme ortamında: http://localhost:3000/api
 // Üretim ortamında: /api
 const API_BASE_URL = 
   typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:3005/api'
+    ? '/api'  // Localde de /api kullan, Next.js API rotalarını kullanacağız
     : '/api';
 
 // Kimlik doğrulama token'ını local storage'dan al
 export const getToken = () => {
   if (typeof window !== 'undefined') {
     const userStr = localStorage.getItem('user');
-    console.log('localStorage user:', userStr);
+    console.log('localStorage user:', userStr ? 'Mevcut' : 'Bulunamadı');
     
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        console.log('Parsed user:', { ...user, token: user.token ? `${user.token.substring(0, 10)}...` : null });
         
-        if (!user.token) {
+        // Token kontrolü
+        if (!user || !user.token) {
           console.warn('Token bulunamadı! Kullanıcı nesnesinde token yok.');
-          // Kullanıcıyı yeniden giriş yapmaya yönlendir
-          if (typeof window !== 'undefined') {
-            alert('Oturumunuz sona erdi. Lütfen tekrar giriş yapın.');
-            localStorage.removeItem('user');
-            window.location.href = '/giris';
-          }
           return null;
         }
         
+        console.log('Token alındı:', user.token.substring(0, 10) + '...');
         return user.token;
       } catch (error) {
         console.error('Token alınırken hata:', error);
-        // Kullanıcıyı yeniden giriş yapmaya yönlendir
-        if (typeof window !== 'undefined') {
-          alert('Oturumunuzla ilgili bir sorun oluştu. Lütfen tekrar giriş yapın.');
-          localStorage.removeItem('user');
-          window.location.href = '/giris';
-        }
         return null;
       }
     } else {
       console.warn('localStorage\'da user bilgisi bulunamadı!');
-      // Kullanıcıyı giriş sayfasına yönlendir
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/giris')) {
-        alert('Lütfen giriş yapın.');
-        window.location.href = '/giris';
-      }
     }
   }
   return null;
@@ -88,8 +72,7 @@ export const apiRequest = async (
   const options: RequestInit = {
     method,
     headers: getHeaders(includeAuth),
-    credentials: 'same-origin',
-    mode: 'cors'
+    credentials: 'include',
   };
 
   if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
@@ -110,11 +93,20 @@ export const apiRequest = async (
     console.log('Fetch yanıtı alındı:', { 
       status: response.status, 
       statusText: response.statusText,
-      headers: Array.from(response.headers.entries()).reduce((obj, [key, value]) => {
-        obj[key] = value;
-        return obj;
-      }, {} as Record<string, string>)
     });
+    
+    // 401 Unauthorized hatası - token sorunu
+    if (response.status === 401) {
+      console.error('Yetkilendirme hatası: Geçersiz veya eksik token');
+      
+      if (typeof window !== 'undefined') {
+        // Kullanıcıyı giriş sayfasına yönlendirmeden önce uyarı göster
+        alert('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+        localStorage.removeItem('user');
+        window.location.href = '/giris';
+        throw new Error('Yetkilendirme başarısız: Geçersiz token');
+      }
+    }
     
     // Yanıt durumunu kontrol et
     if (!response.ok) {
@@ -146,22 +138,6 @@ export const apiRequest = async (
       throw new Error(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin. Hata: ${error.message}`);
     }
     
-    // Token hatalarında kullanıcıyı giriş sayfasına yönlendir
-    if (error instanceof Error && 
-        (error.message.includes('token') || 
-         error.message.includes('Token') || 
-         error.message.includes('yetki') || 
-         error.message.includes('Yetki'))) {
-      if (typeof window !== 'undefined') {
-        console.warn('Token hatası nedeniyle kullanıcı giriş sayfasına yönlendiriliyor');
-        localStorage.removeItem('user');
-        // Sayfayı hemen yönlendirme, kullanıcının hatayı görmesine izin ver
-        setTimeout(() => {
-          window.location.href = '/giris';
-        }, 3000);
-      }
-    }
-    
     throw error;
   }
 };
@@ -179,7 +155,8 @@ export const login = (credentials: { email: string; password: string }) => {
 // Kullanıcı çıkışı
 export const logout = () => {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    console.log('Kullanıcı çıkış yaptı, localStorage temizlendi');
   }
 };
 
