@@ -328,4 +328,52 @@ export default function MatchDetailPage() {
       </div>
     </Layout>
   );
+}
+
+export async function getStaticPaths() {
+  return {
+    paths: [], // Hiçbir sayfa ön oluşturulmayacak
+    fallback: 'blocking' // Talep edildiğinde sayfalar oluşturulacak
+  };
+}
+
+export async function getStaticProps({ params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+    
+    // Statik derleme sırasında kullanılacak örnek veri
+    return {
+      props: {
+        match: {
+          id: id,
+          teams: {
+            home: { name: "Örnek Ev Takımı", logo: "https://via.placeholder.com/150" },
+            away: { name: "Örnek Deplasman Takımı", logo: "https://via.placeholder.com/150" }
+          },
+          goals: { home: 0, away: 0 },
+          league: { name: "Örnek Lig", country: "Örnek Ülke", logo: "https://via.placeholder.com/150" },
+          fixture: {
+            id: id,
+            date: new Date().toISOString(),
+            status: { short: "NS" },
+            venue: { name: "Örnek Stadyum", city: "Örnek Şehir" }
+          }
+        },
+        predictions: [],
+        error: null
+      },
+      // Her 1 saatte bir yeniden oluştur
+      revalidate: 3600
+    };
+  } catch (error) {
+    console.error('Maç detayları alınırken hata oluştu:', error);
+    return {
+      props: {
+        match: null,
+        predictions: [],
+        error: 'Maç detayları alınamadı'
+      },
+      revalidate: 60 // Hata durumunda 1 dakika sonra tekrar dene
+    };
+  }
 } 

@@ -379,4 +379,27 @@ export default function MatchesPage() {
       </div>
     </Layout>
   );
+}
+
+export async function getStaticProps() {
+  try {
+    // Statik derleme sırasında kullanılacak örnek veri
+    return {
+      props: {
+        matches: [],
+        error: null
+      },
+      // Her 1 saatte bir yeniden oluştur
+      revalidate: 3600
+    };
+  } catch (error) {
+    console.error('Maç verileri alınırken hata oluştu:', error);
+    return {
+      props: {
+        matches: [],
+        error: 'Maç verileri alınamadı'
+      },
+      revalidate: 60 // Hata durumunda 1 dakika sonra tekrar dene
+    };
+  }
 } 
