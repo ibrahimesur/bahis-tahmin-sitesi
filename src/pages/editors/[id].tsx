@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import Layout from '../../components/Layout';
 import Image from 'next/image';
+import { toast } from 'react-hot-toast';
+import { apiRequest } from '../../utils/api';
 
 interface Article {
   id: string;
@@ -31,33 +33,87 @@ export default function EditorDetailPage() {
   const { user } = useAuth();
   const [editor, setEditor] = useState<EditorDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (id) fetchEditorDetail();
-  }, [id]);
+    if (id) {
+      fetchEditor();
+      if (user) {
+        checkFollowStatus();
+      }
+    }
+  }, [id, user]);
 
-  const fetchEditorDetail = async () => {
+  const fetchEditor = async () => {
     try {
+      setIsLoading(true);
       const response = await fetch(`/api/editors/${id}`);
-      if (!response.ok) throw new Error('Editör bilgileri alınamadı');
+      if (!response.ok) throw new Error('Editör bilgileri yüklenemedi');
       const data = await response.json();
       setEditor(data);
     } catch (error) {
-      console.error('Editör detayı yüklenirken hata:', error);
+      console.error('Editör bilgileri yüklenirken hata:', error);
+      toast.error('Editör bilgileri yüklenemedi');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFollow = async () => {
+  const checkFollowStatus = async () => {
+    if (!user || !user.token) return;
+    
     try {
-      const response = await fetch(`/api/editors/${id}/follow`, {
-        method: editor?.isFollowing ? 'DELETE' : 'POST'
+      const response = await fetch(`/api/editors/is-following?editorId=${id}`, {
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
       });
-      if (!response.ok) throw new Error('İşlem başarısız');
-      setEditor(prev => prev ? { ...prev, isFollowing: !prev.isFollowing } : null);
+      
+      if (!response.ok) throw new Error('Takip durumu kontrol edilemedi');
+      
+      const data = await response.json();
+      setIsFollowing(data.isFollowing);
     } catch (error) {
-      console.error('Takip işlemi başarısız:', error);
+      console.error('Takip durumu kontrol edilirken hata:', error);
+    }
+  };
+
+  const handleFollowToggle = async () => {
+    if (!user) {
+      toast.error('Takip etmek için giriş yapmalısınız');
+      router.push('/giris');
+      return;
+    }
+    
+    if (!editor) return;
+    
+    try {
+      setIsProcessing(true);
+      
+      const method = isFollowing ? 'DELETE' : 'POST';
+      const response = await apiRequest('editors/follow', method, { editorId: editor.id });
+      
+      if (response.isFollowing !== undefined) {
+        setIsFollowing(response.isFollowing);
+        
+        // Başarı mesajı göster
+        toast.success(response.message || (isFollowing ? 'Takipten çıkıldı' : 'Takip edildi'));
+        
+        // Takipçi sayısını güncelle
+        setEditor(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            followers: prev.followers + (isFollowing ? -1 : 1)
+          };
+        });
+      }
+    } catch (error) {
+      console.error('Takip işlemi sırasında hata:', error);
+      toast.error(error instanceof Error ? error.message : 'Takip işlemi sırasında bir hata oluştu');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -84,8 +140,20 @@ export default function EditorDetailPage() {
       <Layout>
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div className="animate-pulse">
-              {/* ... loading state ... */}
+            <div className="animate-pulse space-y-8">
+              <div className="flex items-center space-x-6">
+                <div className="w-32 h-32 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -135,14 +203,27 @@ export default function EditorDetailPage() {
                     <div className="text-sm text-gray-500">Takipçi</div>
                   </div>
                   <button
-                    onClick={handleFollow}
+                    onClick={handleFollowToggle}
+                    disabled={isProcessing}
                     className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      editor.isFollowing
+                      isFollowing
                         ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
-                    {editor.isFollowing ? 'Takibi Bırak' : 'Takip Et'}
+                    {isProcessing ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        İşleniyor...
+                      </span>
+                    ) : isFollowing ? (
+                      'Takibi Bırak'
+                    ) : (
+                      'Takip Et'
+                    )}
                   </button>
                 </div>
               </div>
