@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+import Router from 'next/router';
 import { AuthUser } from '../types';
 
 interface AuthContextType {
@@ -6,7 +8,7 @@ interface AuthContextType {
   login: (user: AuthUser) => void;
   logout: () => void;
   isLoading: boolean;
-  updateUser: (updatedUser: AuthUser) => void;
+  updateUser: (updatedUser: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,14 +32,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (storedUser) {
-        const userData = JSON.parse(storedUser);
-        console.log('AuthContext: Kullanıcı bilgisi alındı', { 
-          id: userData.id,
-          role: userData.role,
-          hasToken: !!userData.token,
-          tokenLength: userData.token ? userData.token.length : 0
-        });
-        setUser(userData);
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('AuthContext: Kullanıcı bilgisi alındı', { 
+            id: userData.id,
+            role: userData.role,
+            hasToken: !!userData.token,
+            tokenLength: userData.token ? userData.token.length : 0
+          });
+          
+          // Token kontrolü
+          if (!userData.token) {
+            console.warn('AuthContext: Token bulunamadı, kullanıcı oturumu geçersiz');
+            
+            // Geliştirme ortamında token yoksa bile kullanıcıyı ayarla
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Geliştirme ortamında token olmadan devam ediliyor');
+              setUser(userData);
+            } else {
+              // Üretim ortamında localStorage'ı temizle
+              localStorage.removeItem('user');
+            }
+          } else {
+            setUser(userData);
+          }
+        } catch (parseError) {
+          console.error('AuthContext: JSON ayrıştırma hatası', parseError);
+          // Bozuk veriyi temizle
+          localStorage.removeItem('user');
+        }
       }
     } catch (error) {
       console.error('AuthContext: localStorage okuma hatası', error);
@@ -52,29 +75,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('AuthContext: Kullanıcı giriş yapıyor', { 
       id: userData.id,
       role: userData.role,
-      hasToken: !!userData.token
+      hasToken: !!userData.token,
+      tokenLength: userData.token ? userData.token.length : 0
     });
+    
+    // Token kontrolü
+    if (!userData.token) {
+      console.error('AuthContext: Giriş yapılırken token bulunamadı');
+      toast.error('Giriş yapılamadı: Token bulunamadı');
+      return;
+    }
+    
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    toast.success('Başarıyla giriş yaptınız');
   };
 
   const logout = () => {
     console.log('AuthContext: Kullanıcı çıkış yapıyor');
     setUser(null);
     localStorage.removeItem('user');
+    Router.push('/');
+    toast.success('Başarıyla çıkış yaptınız');
   };
 
-  const updateUser = (updatedUser: AuthUser) => {
-    console.log('AuthContext: Kullanıcı bilgileri güncelleniyor', {
-      id: updatedUser.id,
-      username: updatedUser.username
-    });
-    setUser(updatedUser);
-    
-    // localStorage'daki kullanıcı bilgilerini güncelle
-    if (updatedUser) {
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+  const updateUser = (updatedUser: Partial<AuthUser>) => {
+    if (!user) {
+      console.error('AuthContext: Kullanıcı güncellenirken kullanıcı bulunamadı');
+      return;
     }
+    
+    console.log('AuthContext: Kullanıcı güncelleniyor', updatedUser);
+    
+    const newUserData = { ...user, ...updatedUser };
+    setUser(newUserData);
+    localStorage.setItem('user', JSON.stringify(newUserData));
   };
 
   return (

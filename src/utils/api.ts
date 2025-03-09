@@ -7,6 +7,22 @@ const API_BASE_URL = typeof window !== 'undefined'
   ? window.location.origin + '/api/' 
   : 'http://localhost:3000/api/';
 
+// Kullanıcıyı giriş sayfasına yönlendir
+export const redirectToLogin = (message: string = 'Oturum süresi doldu, lütfen tekrar giriş yapın') => {
+  if (typeof window !== 'undefined') {
+    toast.error(message);
+    
+    // Geliştirme ortamında yönlendirme yapma
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Geliştirme ortamında login sayfasına yönlendirme engellendi');
+      return;
+    }
+    
+    // Üretim ortamında yönlendirme yap
+    Router.push('/giris');
+  }
+};
+
 // Local storage'dan token'ı al
 export const getToken = (): string | null => {
   if (typeof window === 'undefined') {
@@ -23,15 +39,35 @@ export const getToken = (): string | null => {
     }
     
     console.log('getToken: localStorage\'da user bulundu');
-    const user = JSON.parse(userStr);
     
-    if (!user || !user.token) {
-      console.log('getToken: Token bulunamadı', { user });
+    try {
+      const user = JSON.parse(userStr);
+      console.log('getToken: Kullanıcı bilgileri:', { 
+        hasToken: !!user?.token, 
+        userKeys: user ? Object.keys(user) : [] 
+      });
+      
+      if (!user || !user.token) {
+        console.log('getToken: Token bulunamadı veya geçersiz', { user });
+        
+        // Geliştirme ortamında token yoksa bile localStorage'ı temizleme
+        if (process.env.NODE_ENV !== 'development') {
+          localStorage.removeItem('user');
+        }
+        
+        return null;
+      }
+      
+      console.log('getToken: Token bulundu', { tokenLength: user.token.length });
+      return user.token;
+    } catch (parseError) {
+      console.error('getToken: JSON ayrıştırma hatası', parseError);
+      console.log('getToken: Ham kullanıcı verisi:', userStr);
+      
+      // Geçersiz JSON ise localStorage'ı temizle
+      localStorage.removeItem('user');
       return null;
     }
-    
-    console.log('getToken: Token bulundu', { tokenLength: user.token.length });
-    return user.token;
   } catch (error) {
     console.error('getToken: Token alınırken hata oluştu', error);
     return null;
@@ -82,11 +118,10 @@ export const apiRequest = async (
           // Geliştirme ortamında token yoksa bile devam et, hata fırlatma
         } else {
           // Üretim ortamında token yoksa ve token gerekiyorsa, kullanıcıyı giriş sayfasına yönlendir
-          if (typeof window !== 'undefined') {
-            toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
-            Router.push('/giris');
-            throw new Error('Token bulunamadı');
-          }
+          // Ancak hata fırlatma, isteğin devam etmesine izin ver
+          redirectToLogin();
+          // Hata fırlatma, isteğin devam etmesine izin ver
+          // throw new Error('Token bulunamadı');
         }
       }
     }
@@ -109,16 +144,18 @@ export const apiRequest = async (
       console.error('API isteği: Yetkilendirme hatası');
       
       // Geliştirme ortamında 401 hatası alınsa bile yönlendirme yapma
-      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development') {
-        toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
-        localStorage.removeItem('user');
-        Router.push('/giris');
-        throw new Error('Yetkilendirme başarısız');
-      } else if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'development') {
+        redirectToLogin();
+        // Üretim ortamında localStorage'ı temizle
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user');
+        }
+      } else {
         console.warn('Geliştirme ortamında 401 hatası alındı, ancak yönlendirme yapılmıyor');
-        // Geliştirme ortamında hata fırlatmaya devam et, ancak yönlendirme yapma
-        throw new Error('Geliştirme ortamında yetkilendirme hatası: ' + response.statusText);
       }
+      
+      // Hata fırlatma, isteğin devam etmesine izin ver
+      // throw new Error('Geliştirme ortamında yetkilendirme hatası: ' + response.statusText);
     }
 
     // Yanıtı işle
@@ -148,12 +185,34 @@ export const apiRequest = async (
     // Başarısız yanıt için hata fırlat
     if (!response.ok) {
       const errorMessage = responseData.message || 'Bir hata oluştu';
+      
+      // Geliştirme ortamında hata fırlatma, boş veri döndür
+      if (process.env.NODE_ENV === 'development') {
+        console.error('API yanıtı başarısız:', errorMessage);
+        // Geliştirme ortamında boş veri döndür
+        return {
+          success: false,
+          message: errorMessage,
+          isDevFallback: true
+        };
+      }
+      
       throw new Error(errorMessage);
     }
 
     return responseData;
   } catch (error) {
     console.error('API isteği sırasında hata:', error);
+    
+    // Geliştirme ortamında hata fırlatma, boş veri döndür
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Bilinmeyen hata',
+        isDevFallback: true
+      };
+    }
+    
     throw error;
   }
 };
