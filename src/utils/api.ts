@@ -75,11 +75,18 @@ export const apiRequest = async (
         console.log('API isteği: Token eklendi', { tokenLength: token.length });
       } else {
         console.warn('API isteği: Token bulunamadı');
-        // Token yoksa ve token gerekiyorsa, kullanıcıyı giriş sayfasına yönlendir
-        if (typeof window !== 'undefined') {
-          toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
-          Router.push('/giris');
-          throw new Error('Token bulunamadı');
+        
+        // Geliştirme ortamında token yoksa, hata fırlatma
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Geliştirme ortamında token bulunamadı, ancak devam ediliyor');
+          // Geliştirme ortamında token yoksa bile devam et, hata fırlatma
+        } else {
+          // Üretim ortamında token yoksa ve token gerekiyorsa, kullanıcıyı giriş sayfasına yönlendir
+          if (typeof window !== 'undefined') {
+            toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
+            Router.push('/giris');
+            throw new Error('Token bulunamadı');
+          }
         }
       }
     }
@@ -100,34 +107,43 @@ export const apiRequest = async (
     // 401 Unauthorized hatası için kullanıcıyı giriş sayfasına yönlendir
     if (response.status === 401) {
       console.error('API isteği: Yetkilendirme hatası');
-      if (typeof window !== 'undefined') {
+      
+      // Geliştirme ortamında 401 hatası alınsa bile yönlendirme yapma
+      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'development') {
         toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
         localStorage.removeItem('user');
         Router.push('/giris');
+        throw new Error('Yetkilendirme başarısız');
+      } else if (process.env.NODE_ENV === 'development') {
+        console.warn('Geliştirme ortamında 401 hatası alındı, ancak yönlendirme yapılmıyor');
+        // Geliştirme ortamında hata fırlatmaya devam et, ancak yönlendirme yapma
+        throw new Error('Geliştirme ortamında yetkilendirme hatası: ' + response.statusText);
       }
-      throw new Error('Yetkilendirme başarısız');
     }
 
-    // Yanıtı JSON olarak parse etmeyi dene
+    // Yanıtı işle
     let responseData;
+    
+    // Yanıtın bir kopyasını oluştur
+    const responseClone = response.clone();
+    
     try {
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        responseData = await response.json();
-      } else {
-        // JSON olmayan yanıt için metin olarak al
-        const text = await response.text();
+      // Önce JSON olarak ayrıştırmayı dene
+      responseData = await response.json();
+      console.log('API yanıt verisi:', responseData);
+    } catch (jsonError) {
+      console.error('API yanıtı JSON olarak ayrıştırılamadı:', jsonError);
+      
+      try {
+        // JSON ayrıştırma başarısız olursa, metin olarak oku
+        const text = await responseClone.text();
         console.warn('API yanıtı JSON değil:', text);
-        responseData = { message: text };
+        responseData = { message: text || 'Sunucu yanıtı işlenemedi' };
+      } catch (textError) {
+        console.error('API yanıtı metin olarak da okunamadı:', textError);
+        responseData = { message: 'Sunucu yanıtı işlenemedi' };
       }
-    } catch (error) {
-      console.error('API yanıtı JSON olarak ayrıştırılamadı:', error);
-      const text = await response.text();
-      console.warn('Ham yanıt:', text);
-      responseData = { message: 'Sunucu yanıtı işlenemedi' };
     }
-
-    console.log('API yanıt verisi:', responseData);
 
     // Başarısız yanıt için hata fırlat
     if (!response.ok) {
