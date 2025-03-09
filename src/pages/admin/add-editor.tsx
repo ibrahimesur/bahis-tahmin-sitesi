@@ -35,38 +35,24 @@ const AddEditorPage = () => {
       setIsSubmitting(true);
       setSearchPerformed(true);
       
-      // Burada gerçek API çağrısı yapılacak
-      // Şimdilik simüle ediyoruz
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Gerçek API çağrısı yapıyoruz
+      const response = await fetch(`/api/admin/users/search?email=${encodeURIComponent(email)}`, {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
       
-      // Gerçek uygulamada:
-      // const response = await fetch(`/api/admin/users/search?email=${encodeURIComponent(email)}`, {
-      //   headers: {
-      //     'Authorization': `Bearer ${user?.token}`
-      //   }
-      // });
-      // 
-      // if (!response.ok) {
-      //   const error = await response.json();
-      //   throw new Error(error.message || 'Kullanıcı aranırken bir hata oluştu');
-      // }
-      // 
-      // const data = await response.json();
-      // setSearchResults(data.users);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Kullanıcı aranırken bir hata oluştu');
+      }
+      
+      const data = await response.json();
+      setSearchResults(data.users);
 
-      // Örnek veri
-      if (email.includes('@')) {
-        setSearchResults([
-          {
-            id: '1',
-            username: email.split('@')[0],
-            email: email,
-            role: 'user',
-            createdAt: new Date().toISOString()
-          }
-        ]);
-      } else {
-        setSearchResults([]);
+      // Kullanıcı bulunamadıysa bildir
+      if (data.users.length === 0) {
+        toast.error('Bu e-posta adresine sahip kullanıcı bulunamadı');
       }
     } catch (error) {
       console.error('Kullanıcı arama hatası:', error);
@@ -81,29 +67,26 @@ const AddEditorPage = () => {
     try {
       setIsSubmitting(true);
       
-      // Burada gerçek API çağrısı yapılacak
-      // Şimdilik simüle ediyoruz
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Gerçek API çağrısı yapıyoruz
+      const response = await fetch('/api/admin/users/update-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({
+          userId,
+          newRole: 'editor'
+        })
+      });
       
-      // Gerçek uygulamada:
-      // const response = await fetch('/api/admin/users/update-role', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${user?.token}`
-      //   },
-      //   body: JSON.stringify({
-      //     userId,
-      //     newRole: 'editor'
-      //   })
-      // });
-      // 
-      // if (!response.ok) {
-      //   const error = await response.json();
-      //   throw new Error(error.message || 'Kullanıcı rolü güncellenirken bir hata oluştu');
-      // }
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Kullanıcı rolü güncellenirken bir hata oluştu');
+      }
 
-      toast.success('Kullanıcı başarıyla editör yapıldı');
+      const data = await response.json();
+      toast.success(data.message || 'Kullanıcı başarıyla editör yapıldı');
       
       // Sonuçları güncelle
       setSearchResults(searchResults.map(user => 
