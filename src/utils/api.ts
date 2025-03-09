@@ -1,143 +1,125 @@
-// API istekleri için utility fonksiyonlar
+// API istekleri için yardımcı fonksiyonlar
+import { toast } from 'react-hot-toast';
+import Router from 'next/router';
 
-// API endpoint'ler için temel URL
-// Geliştirme ortamında: http://localhost:3000/api
-// Üretim ortamında: /api
-const API_BASE_URL = 
-  typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? '/api'  // Localde de /api kullan, Next.js API rotalarını kullanacağız
-    : '/api';
+// API temel URL'si
+const API_BASE_URL = typeof window !== 'undefined' 
+  ? window.location.origin + '/api/' 
+  : 'http://localhost:3000/api/';
 
-// Kimlik doğrulama token'ını local storage'dan al
-export const getToken = () => {
-  if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem('user');
-    console.log('localStorage user:', userStr ? 'Mevcut' : 'Bulunamadı');
-    
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        
-        // Token kontrolü
-        if (!user || !user.token) {
-          console.warn('Token bulunamadı! Kullanıcı nesnesinde token yok.');
-          return null;
-        }
-        
-        console.log('Token alındı:', user.token.substring(0, 10) + '...');
-        return user.token;
-      } catch (error) {
-        console.error('Token alınırken hata:', error);
-        return null;
-      }
-    } else {
-      console.warn('localStorage\'da user bilgisi bulunamadı!');
-    }
-  }
-  return null;
-};
-
-// HTTP isteği için header'ları oluştur
-export const getHeaders = (includeAuth = true) => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  };
-
-  if (includeAuth) {
-    const token = getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-      console.log('Authorization header added:', `Bearer ${token.substring(0, 10)}...`);
-    } else {
-      console.warn('Token olmadığı için Authorization header eklenemedi!');
-    }
-  }
-
-  console.log('Request headers:', headers);
-  return headers;
-};
-
-// Genel API istek fonksiyonu
-export const apiRequest = async (
-  endpoint: string, 
-  method: string = 'GET', 
-  data?: any, 
-  includeAuth: boolean = true
-) => {
-  const url = `${API_BASE_URL}/${endpoint}`;
-  
-  console.log(`API isteği: ${method} ${url}`);
-  
-  const options: RequestInit = {
-    method,
-    headers: getHeaders(includeAuth),
-    credentials: 'include',
-  };
-
-  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-    options.body = JSON.stringify(data);
-    console.log('Gönderilen veri:', data);
+// Local storage'dan token'ı al
+export const getToken = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null;
   }
 
   try {
-    console.log('Fetch isteği başlatılıyor:', { 
-      url, 
+    console.log('getToken: localStorage kontrol ediliyor');
+    const userStr = localStorage.getItem('user');
+    
+    if (!userStr) {
+      console.log('getToken: localStorage\'da user bulunamadı');
+      return null;
+    }
+    
+    console.log('getToken: localStorage\'da user bulundu');
+    const user = JSON.parse(userStr);
+    
+    if (!user || !user.token) {
+      console.log('getToken: Token bulunamadı', { user });
+      return null;
+    }
+    
+    console.log('getToken: Token bulundu', { tokenLength: user.token.length });
+    return user.token;
+  } catch (error) {
+    console.error('getToken: Token alınırken hata oluştu', error);
+    return null;
+  }
+};
+
+// API isteği gönder
+export const apiRequest = async (
+  endpoint: string,
+  method: string = 'GET',
+  data: any = null,
+  includeToken: boolean = true
+): Promise<any> => {
+  try {
+    console.log(`API isteği: ${method} ${endpoint}`, { data });
+    
+    // URL'yi oluştur
+    const url = endpoint.startsWith('http') 
+      ? endpoint 
+      : `${API_BASE_URL}${endpoint}`;
+    
+    console.log('API isteği URL:', url);
+    
+    // İstek seçeneklerini hazırla
+    const options: RequestInit = {
       method,
-      headers: options.headers,
-      hasBody: !!options.body
-    });
-    
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
+    };
+
+    // Token ekle
+    if (includeToken) {
+      const token = getToken();
+      if (token) {
+        options.headers = {
+          ...options.headers,
+          'Authorization': `Bearer ${token}`
+        };
+        console.log('API isteği: Token eklendi', { tokenLength: token.length });
+      } else {
+        console.warn('API isteği: Token bulunamadı');
+        // Token yoksa ve token gerekiyorsa, kullanıcıyı giriş sayfasına yönlendir
+        if (typeof window !== 'undefined') {
+          toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
+          Router.push('/giris');
+          throw new Error('Token bulunamadı');
+        }
+      }
+    }
+
+    // Body ekle (GET ve HEAD istekleri hariç)
+    if (data && !['GET', 'HEAD'].includes(method)) {
+      options.body = JSON.stringify(data);
+    }
+
+    // İsteği gönder
     const response = await fetch(url, options);
-    
-    console.log('Fetch yanıtı alındı:', { 
+    console.log('API yanıtı:', { 
       status: response.status, 
       statusText: response.statusText,
+      ok: response.ok
     });
-    
-    // 401 Unauthorized hatası - token sorunu
+
+    // 401 Unauthorized hatası için kullanıcıyı giriş sayfasına yönlendir
     if (response.status === 401) {
-      console.error('Yetkilendirme hatası: Geçersiz veya eksik token');
-      
+      console.error('API isteği: Yetkilendirme hatası');
       if (typeof window !== 'undefined') {
-        // Kullanıcıyı giriş sayfasına yönlendirmeden önce uyarı göster
-        alert('Oturumunuz sona ermiş. Lütfen tekrar giriş yapın.');
+        toast.error('Oturum süresi doldu, lütfen tekrar giriş yapın');
         localStorage.removeItem('user');
-        window.location.href = '/giris';
-        throw new Error('Yetkilendirme başarısız: Geçersiz token');
+        Router.push('/giris');
       }
+      throw new Error('Yetkilendirme başarısız');
     }
-    
-    // Yanıt durumunu kontrol et
+
+    // Yanıtı JSON olarak parse et
+    const responseData = await response.json();
+    console.log('API yanıt verisi:', responseData);
+
+    // Başarısız yanıt için hata fırlat
     if (!response.ok) {
-      // Yanıt JSON değilse hata mesajını almaya çalış
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
-        const errorData = await response.json();
-        console.error('API hatası (JSON):', errorData);
-        throw new Error(errorData.message || `Sunucu hatası: ${response.status}`);
-      } else {
-        const errorText = await response.text();
-        console.error('API hatası (Text):', errorText);
-        throw new Error(`Sunucu hatası (${response.status}): ${errorText || response.statusText}`);
-      }
+      throw new Error(responseData.message || 'Bir hata oluştu');
     }
-    
-    // JSON yanıtı ayrıştır
-    const result = await response.json();
-    console.log('API yanıtı:', result);
-    
-    return result;
+
+    return responseData;
   } catch (error) {
-    // Hata yönetimi
-    console.error('API isteği hatası:', error);
-    
-    // Ağ hatalarını daha açıklayıcı hale getir
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error(`Sunucuya bağlanılamadı. Lütfen internet bağlantınızı kontrol edin ve tekrar deneyin. Hata: ${error.message}`);
-    }
-    
+    console.error('API isteği sırasında hata:', error);
     throw error;
   }
 };

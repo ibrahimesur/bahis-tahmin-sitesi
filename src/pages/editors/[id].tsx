@@ -37,9 +37,25 @@ export default function EditorDetailPage() {
   const fetchEditor = async (editorId: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/editors/${editorId}`);
-      if (!response.ok) throw new Error('Editör bilgileri yüklenemedi');
+      console.log('Editör bilgileri için istek yapılıyor:', `/api/editors/${editorId}`);
+      
+      // Göreceli URL kullanarak istek yap
+      const response = await fetch(`/api/editors/${editorId}`, {
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      if (!response.ok) {
+        console.error('API yanıtı başarısız:', {
+          status: response.status,
+          statusText: response.statusText
+        });
+        throw new Error('Editör bilgileri yüklenemedi');
+      }
+      
       const data = await response.json();
+      console.log('Alınan editör verisi:', data);
       setEditor(data);
     } catch (error) {
       console.error('Editör bilgileri yüklenirken hata:', error);
@@ -53,15 +69,26 @@ export default function EditorDetailPage() {
     if (!user || !user.token) return;
     
     try {
+      console.log('Takip durumu kontrolü için istek yapılıyor');
+      
+      // Göreceli URL kullanarak istek yap
       const response = await fetch(`/api/editors/is-following?editorId=${editorId}`, {
         headers: {
-          'Authorization': `Bearer ${user.token}`
+          'Authorization': `Bearer ${user.token}`,
+          'Cache-Control': 'no-cache'
         }
       });
       
-      if (!response.ok) throw new Error('Takip durumu kontrol edilemedi');
+      if (!response.ok) {
+        console.error('Takip durumu API yanıtı başarısız:', {
+          status: response.status,
+          statusText: response.statusText
+        });
+        throw new Error('Takip durumu kontrol edilemedi');
+      }
       
       const data = await response.json();
+      console.log('Takip durumu yanıtı:', data);
       setIsFollowing(data.isFollowing);
     } catch (error) {
       console.error('Takip durumu kontrol edilirken hata:', error);
@@ -81,7 +108,11 @@ export default function EditorDetailPage() {
       setIsProcessing(true);
       
       const method = isFollowing ? 'DELETE' : 'POST';
+      console.log(`${isFollowing ? 'Takipten çıkma' : 'Takip etme'} isteği gönderiliyor`);
+      
+      // apiRequest fonksiyonunu kullanarak istek yap
       const response = await apiRequest('editors/follow', method, { editorId: editor.id });
+      console.log('Takip işlemi yanıtı:', response);
       
       if (response.isFollowing !== undefined) {
         setIsFollowing(response.isFollowing);
